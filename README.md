@@ -6,8 +6,10 @@
  .'         '.
 /  ===   ===  \
 :   O     O   :
-:             :        muxoxum.github.io/chernikov/ 
+:             :        
 \   \_____/   /
  '.         .'
    `-------'
+
 ```
+[Ссылка](https://muxoxum.github.io/ASCII_3D/)
