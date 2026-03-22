@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Butterfly Effect</title>
+  <style>
+    :root {
+      --bg: #04131b;
+      --bg-deep: #01070b;
+      --panel: rgba(7, 24, 32, 0.84);
+      --panel-strong: rgba(5, 18, 25, 0.94);
+      --panel-border: rgba(114, 225, 255, 0.2);
+      --text: #edf9ff;
+      --muted: #8bb8c8;
+      --accent: #ffd166;
+      --cyan: #72e1ff;
+      --coral: #ff8f70;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(9, 28, 37, 0.35), transparent 34%),
+        linear-gradient(180deg, var(--bg), var(--bg-deep));
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(114, 225, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(114, 225, 255, 0.05) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+      opacity: 0.24;
+    }
+
+    .shell {
+      position: relative;
+      min-height: 100vh;
+      padding: 28px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 22px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 420px);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .hero,
+    .controls,
+    .plot-card {
+      border: 1px solid var(--panel-border);
+      background: linear-gradient(180deg, var(--panel), var(--panel-strong));
+      backdrop-filter: blur(12px);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .hero {
+      padding: 24px 26px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--cyan);
+      font-size: 0.76rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 4.3rem);
+      line-height: 0.92;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .hero p {
+      margin: 14px 0 0;
+      max-width: 55ch;
+      color: var(--muted);
+      line-height: 1.58;
+      font-size: 1rem;
+    }
+
+    .controls {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+      align-content: center;
+    }
+
+    label {
+      font-size: 0.88rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid rgba(114, 225, 255, 0.22);
+      background: rgba(3, 12, 18, 0.92);
+      color: var(--text);
+      font: inherit;
+      font-size: 1.05rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus {
+      border-color: rgba(255, 209, 102, 0.72);
+      box-shadow: none;
+    }
+
+    .unit {
+      padding: 12px 14px;
+      color: var(--accent);
+      border: 1px solid rgba(255, 209, 102, 0.25);
+      background: rgba(255, 209, 102, 0.08);
+      min-width: 60px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .hint,
+    .stats {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .stats strong {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .visuals {
+      min-height: 0;
+      display: block;
+    }
+
+    .plot-card {
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .plot-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .plot-title {
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .seed {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      min-height: 520px;
+      display: block;
+      border: 1px solid rgba(114, 225, 255, 0.14);
+      background:
+        linear-gradient(180deg, rgba(0, 10, 16, 0.9), rgba(3, 11, 17, 0.98));
+      cursor: grab;
+    }
+
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    .caption {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .shell {
+        min-height: auto;
+      }
+
+      .topbar,
+      .visuals {
+        grid-template-columns: 1fr;
+      }
+
+      canvas {
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="topbar">
+      <div class="hero">
+        <p class="eyebrow">Chaos Laboratory</p>
+        <h1>Butterfly Effect</h1>
+        <p>
+          Две системы Лоренца стартуют почти одинаково, но крошечное отличие в начальном
+          значении постепенно превращается в заметно разные траектории.
+        </p>
+      </div>
+
+      <div class="controls">
+        <label for="deltaPercent">Разница в начальных значениях</label>
+        <div class="field-row">
+          <input id="deltaPercent" type="number" min="0" max="10" step="0.0001" value="0.001" inputmode="decimal">
+          <div class="unit">%</div>
+        </div>
+        <p class="hint">Изменение применяется сразу. Попробуйте значения от `0.0001` до `0.01`, чтобы увидеть, как быстро расходятся траектории.</p>
+        <p class="stats" id="stats">Текущее отличие по оси X: <strong>0.0000</strong></p>
+      </div>
+    </section>
+
+    <section class="visuals">
+      <article class="plot-card">
+        <div class="plot-head">
+          <h2 class="plot-title">Shared View</h2>
+          <span class="seed"><span id="seedA">x0 = 0.01000</span> / <span id="seedB">x0 = 0.01000</span></span>
+        </div>
+        <canvas id="canvasPlane"></canvas>
+        <div class="caption">Обе траектории Лоренца показаны на одном холсте: голубая линия показывает базовую систему, коралловая отражает систему с малым смещением. Зажмите мышь и тяните, чтобы вращать вид.</div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const SIGMA = 10;
+    const RHO = 28;
+    const BETA = 8 / 3;
+    const DT = 0.0075;
+    const STEPS_PER_FRAME = 6;
+    const MAX_POINTS = 2200;
+    const BASE_STATE = { x: 0.01, y: 1, z: 1.05 };
+    const VIEW = {
+      scale: 11.5,
+      yaw: -0.7,
+      pitch: 0.42
+    };
+
+    const input = document.getElementById("deltaPercent");
+    const stats = document.getElementById("stats");
+    const seedA = document.getElementById("seedA");
+    const seedB = document.getElementById("seedB");
+
+    function createRenderer(canvas) {
+      const ctx = canvas.getContext("2d");
+
+      function resize() {
+        const ratio = window.devicePixelRatio || 1;
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        canvas.width = Math.floor(width * ratio);
+        canvas.height = Math.floor(height * ratio);
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+
+      resize();
+      window.addEventListener("resize", resize);
+      return { canvas, ctx, resize };
+    }
+
+    function derivatives(point) {
+      return {
+        x: SIGMA * (point.y - point.x),
+        y: point.x * (RHO - point.z) - point.y,
+        z: point.x * point.y - BETA * point.z
+      };
+    }
+
+    function stepLorenz(point) {
+      const k1 = derivatives(point);
+      const k2 = derivatives({
+        x: point.x + (k1.x * DT) / 2,
+        y: point.y + (k1.y * DT) / 2,
+        z: point.z + (k1.z * DT) / 2
+      });
+      const k3 = derivatives({
+        x: point.x + (k2.x * DT) / 2,
+        y: point.y + (k2.y * DT) / 2,
+        z: point.z + (k2.z * DT) / 2
+      });
+      const k4 = derivatives({
+        x: point.x + k3.x * DT,
+        y: point.y + k3.y * DT,
+        z: point.z + k3.z * DT
+      });
+
+      point.x += (DT / 6) * (k1.x + 2 * k2.x + 2 * k3.x + k4.x);
+      point.y += (DT / 6) * (k1.y + 2 * k2.y + 2 * k3.y + k4.y);
+      point.z += (DT / 6) * (k1.z + 2 * k2.z + 2 * k3.z + k4.z);
+    }
+
+    function project(point, width, height) {
+      const cosY = Math.cos(VIEW.yaw);
+      const sinY = Math.sin(VIEW.yaw);
+      const cosP = Math.cos(VIEW.pitch);
+      const sinP = Math.sin(VIEW.pitch);
+
+      const x1 = point.x * cosY - point.z * sinY;
+      const z1 = point.x * sinY + point.z * cosY;
+      const y1 = point.y * cosP - z1 * sinP;
+      const z2 = point.y * sinP + z1 * cosP;
+      const perspective = 1 / (1 + z2 * 0.025);
+
+      return {
+        x: width / 2 + x1 * VIEW.scale * perspective,
+        y: height / 2 - y1 * VIEW.scale * perspective
+      };
+    }
+
+    const plane = createRenderer(document.getElementById("canvasPlane"));
+    const systems = [
+      { stroke: "#72e1ff", points: [], sim: { ...BASE_STATE } },
+      { stroke: "#ff8f70", points: [], sim: { ...BASE_STATE } }
+    ];
+    const drag = {
+      active: false,
+      x: 0,
+      y: 0
+    };
+
+    function drawAxes(ctx, width, height) {
+      ctx.strokeStyle = "rgba(114, 225, 255, 0.08)";
+      ctx.lineWidth = 1;
+      for (let x = 32.5; x < width; x += 34) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 24.5; y < height; y += 34) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+    }
+
+    function draw() {
+      const { ctx, canvas } = plane;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(3, 11, 17, 1)";
+      ctx.fillRect(0, 0, width, height);
+      drawAxes(ctx, width, height);
+
+      systems.forEach((system) => {
+        if (system.points.length < 2) {
+          return;
+        }
+
+        ctx.beginPath();
+        system.points.forEach((point, index) => {
+          const projected = project(point, width, height);
+          if (index === 0) {
+            ctx.moveTo(projected.x, projected.y);
+          } else {
+            ctx.lineTo(projected.x, projected.y);
+          }
+        });
+        ctx.strokeStyle = system.stroke;
+        ctx.lineWidth = 1.7;
+        ctx.stroke();
+
+        const head = project(system.points[system.points.length - 1], width, height);
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = system.stroke;
+        ctx.fill();
+      });
+    }
+
+    function formatSeed(value) {
+      return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+    }
+
+    function resetSimulation() {
+      const percent = Math.max(0, Number.parseFloat(input.value) || 0);
+      const delta = BASE_STATE.x * (percent / 100);
+
+      systems[0].sim = { ...BASE_STATE };
+      systems[1].sim = { ...BASE_STATE, x: BASE_STATE.x + delta };
+      systems[0].points = [];
+      systems[1].points = [];
+
+      seedA.textContent = "x0 = " + formatSeed(systems[0].sim.x);
+      seedB.textContent = "x0 = " + formatSeed(systems[1].sim.x);
+      stats.innerHTML = "Текущее отличие по оси X: <strong>" + delta.toFixed(8) + "</strong>";
+      draw();
+    }
+
+    function tick(system) {
+      for (let step = 0; step < STEPS_PER_FRAME; step += 1) {
+        stepLorenz(system.sim);
+        system.points.push({ ...system.sim });
+        if (system.points.length > MAX_POINTS) {
+          system.points.shift();
+        }
+      }
+    }
+
+    function animate() {
+      tick(systems[0]);
+      tick(systems[1]);
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    plane.canvas.addEventListener("mousedown", (event) => {
+      drag.active = true;
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+    });
+
+    window.addEventListener("mousemove", (event) => {
+      if (!drag.active) {
+        return;
+      }
+
+      const deltaX = event.clientX - drag.x;
+      const deltaY = event.clientY - drag.y;
+      drag.x = event.clientX;
+      drag.y = event.clientY;
+
+      VIEW.yaw += deltaX * 0.008;
+      VIEW.pitch += deltaY * 0.006;
+      VIEW.pitch = Math.max(-1.2, Math.min(1.2, VIEW.pitch));
+    });
+
+    window.addEventListener("mouseup", () => {
+      drag.active = false;
+    });
+
+    plane.canvas.addEventListener("mouseleave", () => {
+      drag.active = false;
+    });
+
+    input.addEventListener("input", resetSimulation);
+
+    resetSimulation();
+    animate();
+  </script>
+</body>
+</html>

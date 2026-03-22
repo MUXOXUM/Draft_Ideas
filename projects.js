@@ -10,6 +10,11 @@ window.PROJECTS = [
     "path": "ASCII_3D/index.html"
   },
   {
+    "title": "Butterfly Effect",
+    "folder": "butterfly_effect",
+    "path": "butterfly_effect/index.html"
+  },
+  {
     "title": "GOL Torus",
     "folder": "GOL_Torus",
     "path": "GOL_Torus/index.html"
