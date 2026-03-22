@@ -53,6 +53,24 @@
 .color-option:hover .selector {
     opacity: 1;
 }
+
+@media (max-width: 900px) {
+    .modal-content {
+        margin: 18% auto;
+        padding: 18px 14px;
+        width: min(94%, 450px);
+    }
+
+    .modal-content h2 {
+        font-size: 16px;
+        margin-bottom: 16px;
+    }
+
+    .color-option {
+        padding: 9px;
+    }
+}
+
 body.green-theme {
     --main-color: #0f0;
     --border-color: #0a0;

@@ -11,15 +11,18 @@ body {
                  'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Courier New', monospace;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     min-height: 100vh;
-    overflow: hidden;
-    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: clamp(12px, 2vw, 20px);
     font-size: 14px;
 }
 .container {
     text-align: center;
+    width: fit-content;
     max-width: 100%;
+    margin: auto 0;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -28,7 +31,7 @@ body {
     border: 1px solid var(--border-color, #0a0);
     padding: 15px;
     background-color: var(--bg-color, #001100);
-    width: 1540px;
+    width: 100%;
     margin: 0 auto;
     color: var(--main-color, #0f0);
     text-transform: uppercase;
@@ -45,24 +48,37 @@ h1 {
     gap: 20px;
     justify-content: center;
     align-items: flex-start;
+    width: fit-content;
+    max-width: 100%;
 }
-@media (max-width: 1600px) {
-    .title-box {
-        width: 100%;
-        max-width: 1542px;
-    }
+
+@media (max-width: 1280px) {
     .content {
         flex-direction: column;
         align-items: center;
-    }
-    .ascii-container {
         width: 100%;
-        max-width: 1200px;
-        height: 500px;
     }
-    .controls {
-        width: 100%;
-        max-width: 1200px;
-        height: auto;
+}
+
+@media (max-width: 900px) {
+    body {
+        font-size: 13px;
+    }
+
+    .container {
+        gap: 14px;
+    }
+
+    .content {
+        gap: 14px;
+    }
+
+    .title-box {
+        padding: 12px;
+    }
+
+    h1 {
+        font-size: clamp(20px, 5vw, 28px);
+        letter-spacing: 1px;
     }
 }
