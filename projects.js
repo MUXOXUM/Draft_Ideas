@@ -1,13 +1,13 @@
 window.PROJECTS = [
   {
-    "title": "24 Clock",
-    "folder": "24_clock",
-    "path": "24_clock/index.html"
+    "title": "24 Hour Clock",
+    "folder": "24_hour_clock",
+    "path": "24_hour_clock/index.html"
   },
   {
-    "title": "ASCII 3D",
-    "folder": "ASCII_3D",
-    "path": "ASCII_3D/index.html"
+    "title": "3D ASCII Render",
+    "folder": "3d_ascii_render",
+    "path": "3d_ascii_render/index.html"
   },
   {
     "title": "Butterfly Effect",
@@ -15,8 +15,8 @@ window.PROJECTS = [
     "path": "butterfly_effect/index.html"
   },
   {
-    "title": "GOL Torus",
-    "folder": "GOL_Torus",
-    "path": "GOL_Torus/index.html"
+    "title": "Game Of Life On Toroid",
+    "folder": "game_of_life_on_toroid",
+    "path": "game_of_life_on_toroid/index.html"
   }
 ];

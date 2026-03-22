@@ -6,15 +6,13 @@
   <title>Сборник идей</title>
   <style>
     :root {
-      --bg: #07111f;
-      --bg-deep: #0f172a;
-      --card: rgba(10, 18, 32, 0.88);
-      --card-border: rgba(148, 163, 184, 0.16);
-      --text: #e5eefc;
-      --muted: #9cb1cc;
-      --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --status-bg: rgba(148, 163, 184, 0.14);
+      --bg: #f2f2f2;
+      --paper: #ffffff;
+      --line: #d4d4d4;
+      --line-strong: #111111;
+      --text: #111111;
+      --muted: #666666;
+      --status-bg: #ededed;
     }
 
     * {
@@ -26,7 +24,9 @@
       min-height: 100vh;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       color: var(--text);
-      background: linear-gradient(160deg, #040814 0%, var(--bg) 50%, var(--bg-deep) 100%);
+      background:
+        radial-gradient(circle at top, rgba(0, 0, 0, 0.08), transparent 36%),
+        linear-gradient(180deg, #fafafa 0%, var(--bg) 100%);
       display: grid;
       place-items: center;
       padding: 24px;
@@ -34,41 +34,41 @@
 
     .container {
       width: 100%;
-      max-width: 680px;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(18px);
-      border-radius: 16px;
-      padding: 32px;
-      box-shadow: 0 24px 60px rgba(2, 6, 23, 0.48);
+      max-width: 720px;
+      padding: 12px 4px;
     }
 
     h1 {
-      margin: 0 0 10px;
-      font-size: 2rem;
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
     }
 
     p {
-      margin: 0 0 24px;
+      margin: 0 0 28px;
       line-height: 1.5;
       color: var(--muted);
+      max-width: 38rem;
     }
 
     .projects {
-      display: grid;
-      gap: 12px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line-strong);
     }
 
     .projects[data-loading="true"]::before,
     .projects[data-empty="true"]::before {
       display: block;
-      padding: 12px 16px;
-      border-radius: 10px;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
       background: var(--status-bg);
       color: var(--muted);
-      text-align: center;
       font-weight: 500;
-      border: 1px solid rgba(148, 163, 184, 0.12);
+      border: 1px solid var(--line);
     }
 
     .projects[data-loading="true"]::before {
@@ -79,29 +79,35 @@
       content: "Проекты с index.html не найдены.";
     }
 
+    .project-item {
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
     .project-link {
-      display: inline-block;
-      text-align: center;
       text-decoration: none;
-      background: var(--accent);
-      color: #03111f;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-weight: 600;
-      transition: background-color 0.2s ease, transform 0.2s ease;
+      color: var(--text);
+      font-size: 1.02rem;
+      font-weight: 500;
+      transition: color 0.2s ease, opacity 0.2s ease;
     }
 
     .project-link:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
+      color: var(--muted);
+      opacity: 0.9;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 8px 0;
+      }
     }
   </style>
 </head>
 <body>
   <main class="container">
     <h1>Сборник идей</h1>
-    <p>Здесь собраны мои мини-проекты.</p>
-    <div class="projects" data-loading="true"></div>
+    <ol class="projects" data-loading="true"></ol>
   </main>
   <script src="./projects.js"></script>
   <script>
@@ -119,11 +125,16 @@
       projectsContainer.removeAttribute("data-empty");
 
       for (const project of projects) {
+        const item = document.createElement("li");
+        item.className = "project-item";
+
         const link = document.createElement("a");
         link.className = "project-link";
         link.href = project.path;
         link.textContent = project.title;
-        projectsContainer.append(link);
+
+        item.append(link);
+        projectsContainer.append(item);
       }
     }
 

@@ -48,17 +48,18 @@
 
     .shell {
       position: relative;
-      min-height: 100vh;
-      padding: 28px;
+      height: 100vh;
+      padding: 22px;
       display: grid;
       grid-template-rows: auto 1fr;
-      gap: 22px;
+      gap: 14px;
+      overflow: hidden;
     }
 
     .topbar {
       display: grid;
       grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 420px);
-      gap: 18px;
+      gap: 14px;
       align-items: stretch;
     }
 
@@ -72,7 +73,7 @@
     }
 
     .hero {
-      padding: 24px 26px;
+      padding: 16px 20px;
     }
 
     .eyebrow {
@@ -85,29 +86,29 @@
 
     h1 {
       margin: 0;
-      font-size: clamp(2.2rem, 5vw, 4.3rem);
-      line-height: 0.92;
+      font-size: clamp(1.8rem, 4vw, 3.2rem);
+      line-height: 0.95;
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
 
     .hero p {
-      margin: 14px 0 0;
+      margin: 8px 0 0;
       max-width: 55ch;
       color: var(--muted);
-      line-height: 1.58;
-      font-size: 1rem;
+      line-height: 1.42;
+      font-size: 0.94rem;
     }
 
     .controls {
-      padding: 22px;
+      padding: 16px 18px;
       display: grid;
-      gap: 14px;
+      gap: 10px;
       align-content: center;
     }
 
     label {
-      font-size: 0.88rem;
+      font-size: 0.8rem;
       letter-spacing: 0.1em;
       text-transform: uppercase;
       color: var(--cyan);
@@ -122,12 +123,12 @@
 
     input {
       width: 100%;
-      padding: 14px 16px;
+      padding: 11px 14px;
       border: 1px solid rgba(114, 225, 255, 0.22);
       background: rgba(3, 12, 18, 0.92);
       color: var(--text);
       font: inherit;
-      font-size: 1.05rem;
+      font-size: 0.98rem;
       outline: none;
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
@@ -138,7 +139,7 @@
     }
 
     .unit {
-      padding: 12px 14px;
+      padding: 10px 12px;
       color: var(--accent);
       border: 1px solid rgba(255, 209, 102, 0.25);
       background: rgba(255, 209, 102, 0.08);
@@ -154,22 +155,39 @@
       line-height: 1.5;
     }
 
-    .stats strong {
-      color: var(--accent);
+    .stats {
+      display: grid;
+      gap: 4px;
+    }
+
+    .seed-line {
+      font-size: 0.88rem;
       font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .seed-line.base {
+      color: var(--cyan);
+    }
+
+    .seed-line.variant {
+      color: var(--coral);
     }
 
     .visuals {
       min-height: 0;
       display: block;
+      overflow: hidden;
     }
 
     .plot-card {
       padding: 16px;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 12px;
       min-height: 0;
+      height: 100%;
+      overflow: hidden;
     }
 
     .plot-head {
@@ -195,7 +213,7 @@
     canvas {
       width: 100%;
       height: 100%;
-      min-height: 520px;
+      min-height: 0;
       display: block;
       border: 1px solid rgba(114, 225, 255, 0.14);
       background:
@@ -219,7 +237,9 @@
       }
 
       .shell {
-        min-height: auto;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
       }
 
       .topbar,
@@ -237,7 +257,6 @@
   <main class="shell">
     <section class="topbar">
       <div class="hero">
-        <p class="eyebrow">Chaos Laboratory</p>
         <h1>Butterfly Effect</h1>
         <p>
           Две системы Лоренца стартуют почти одинаково, но крошечное отличие в начальном
@@ -251,8 +270,10 @@
           <input id="deltaPercent" type="number" min="0" max="10" step="0.0001" value="0.001" inputmode="decimal">
           <div class="unit">%</div>
         </div>
-        <p class="hint">Изменение применяется сразу. Попробуйте значения от `0.0001` до `0.01`, чтобы увидеть, как быстро расходятся траектории.</p>
-        <p class="stats" id="stats">Текущее отличие по оси X: <strong>0.0000</strong></p>
+        <div class="stats" id="stats">
+          <span class="seed-line base" id="seedA">x0 = 0.01000</span>
+          <span class="seed-line variant" id="seedB">x0 = 0.01000</span>
+        </div>
       </div>
     </section>
 
@@ -260,10 +281,9 @@
       <article class="plot-card">
         <div class="plot-head">
           <h2 class="plot-title">Shared View</h2>
-          <span class="seed"><span id="seedA">x0 = 0.01000</span> / <span id="seedB">x0 = 0.01000</span></span>
         </div>
         <canvas id="canvasPlane"></canvas>
-        <div class="caption">Обе траектории Лоренца показаны на одном холсте: голубая линия показывает базовую систему, коралловая отражает систему с малым смещением. Зажмите мышь и тяните, чтобы вращать вид.</div>
+        <div class="caption">ЛКМ вращает камеру, Shift + ЛКМ или средняя кнопка панорамируют, колесо приближает, двойной клик сбрасывает вид.</div>
       </article>
     </section>
   </main>
@@ -273,13 +293,22 @@
     const RHO = 28;
     const BETA = 8 / 3;
     const DT = 0.0075;
-    const STEPS_PER_FRAME = 6;
+    const STEPS_PER_FRAME = 3;
     const MAX_POINTS = 2200;
     const BASE_STATE = { x: 0.01, y: 1, z: 1.05 };
-    const VIEW = {
-      scale: 11.5,
+    const DEFAULT_VIEW = {
+      zoom: 540,
+      distance: 82,
       yaw: -0.7,
-      pitch: 0.42
+      pitch: 0.42,
+      target: { x: 0, y: 0, z: 24 }
+    };
+    const VIEW = {
+      zoom: DEFAULT_VIEW.zoom,
+      distance: DEFAULT_VIEW.distance,
+      yaw: DEFAULT_VIEW.yaw,
+      pitch: DEFAULT_VIEW.pitch,
+      target: { ...DEFAULT_VIEW.target }
     };
 
     const input = document.getElementById("deltaPercent");
@@ -340,16 +369,22 @@
       const sinY = Math.sin(VIEW.yaw);
       const cosP = Math.cos(VIEW.pitch);
       const sinP = Math.sin(VIEW.pitch);
+      const relative = {
+        x: point.x - VIEW.target.x,
+        y: point.y - VIEW.target.y,
+        z: point.z - VIEW.target.z
+      };
 
-      const x1 = point.x * cosY - point.z * sinY;
-      const z1 = point.x * sinY + point.z * cosY;
-      const y1 = point.y * cosP - z1 * sinP;
-      const z2 = point.y * sinP + z1 * cosP;
-      const perspective = 1 / (1 + z2 * 0.025);
+      const x1 = relative.x * cosY - relative.z * sinY;
+      const z1 = relative.x * sinY + relative.z * cosY;
+      const y1 = relative.y * cosP - z1 * sinP;
+      const z2 = relative.y * sinP + z1 * cosP;
+      const depth = Math.max(18, VIEW.distance + z2);
+      const perspective = VIEW.zoom / depth;
 
       return {
-        x: width / 2 + x1 * VIEW.scale * perspective,
-        y: height / 2 - y1 * VIEW.scale * perspective
+        x: width / 2 + x1 * perspective,
+        y: height / 2 - y1 * perspective
       };
     }
 
@@ -358,11 +393,41 @@
       { stroke: "#72e1ff", points: [], sim: { ...BASE_STATE } },
       { stroke: "#ff8f70", points: [], sim: { ...BASE_STATE } }
     ];
-    const drag = {
-      active: false,
+    const interaction = {
+      pointerId: null,
+      mode: null,
       x: 0,
       y: 0
     };
+
+    function resetView() {
+      VIEW.zoom = DEFAULT_VIEW.zoom;
+      VIEW.distance = DEFAULT_VIEW.distance;
+      VIEW.yaw = DEFAULT_VIEW.yaw;
+      VIEW.pitch = DEFAULT_VIEW.pitch;
+      VIEW.target = { ...DEFAULT_VIEW.target };
+    }
+
+    function getPanBasis() {
+      const cosY = Math.cos(VIEW.yaw);
+      const sinY = Math.sin(VIEW.yaw);
+      const cosP = Math.cos(VIEW.pitch);
+      const sinP = Math.sin(VIEW.pitch);
+
+      return {
+        right: { x: cosY, y: 0, z: -sinY },
+        up: { x: sinY * sinP, y: cosP, z: cosY * sinP }
+      };
+    }
+
+    function panView(deltaX, deltaY, width, height) {
+      const { right, up } = getPanBasis();
+      const panScale = VIEW.distance / Math.min(width, height);
+
+      VIEW.target.x += (-deltaX * right.x + deltaY * up.x) * panScale;
+      VIEW.target.y += (-deltaX * right.y + deltaY * up.y) * panScale;
+      VIEW.target.z += (-deltaX * right.z + deltaY * up.z) * panScale;
+    }
 
     function drawAxes(ctx, width, height) {
       ctx.strokeStyle = "rgba(114, 225, 255, 0.08)";
@@ -418,7 +483,7 @@
     }
 
     function formatSeed(value) {
-      return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+      return value.toFixed(10).replace(/0+$/, "").replace(/\.$/, "");
     }
 
     function resetSimulation() {
@@ -432,7 +497,6 @@
 
       seedA.textContent = "x0 = " + formatSeed(systems[0].sim.x);
       seedB.textContent = "x0 = " + formatSeed(systems[1].sim.x);
-      stats.innerHTML = "Текущее отличие по оси X: <strong>" + delta.toFixed(8) + "</strong>";
       draw();
     }
 
@@ -453,37 +517,73 @@
       requestAnimationFrame(animate);
     }
 
-    plane.canvas.addEventListener("mousedown", (event) => {
-      drag.active = true;
-      drag.x = event.clientX;
-      drag.y = event.clientY;
+    plane.canvas.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
     });
 
-    window.addEventListener("mousemove", (event) => {
-      if (!drag.active) {
+    plane.canvas.addEventListener("pointerdown", (event) => {
+      if (interaction.pointerId !== null) {
         return;
       }
 
-      const deltaX = event.clientX - drag.x;
-      const deltaY = event.clientY - drag.y;
-      drag.x = event.clientX;
-      drag.y = event.clientY;
-
-      VIEW.yaw += deltaX * 0.008;
-      VIEW.pitch += deltaY * 0.006;
-      VIEW.pitch = Math.max(-1.2, Math.min(1.2, VIEW.pitch));
+      interaction.pointerId = event.pointerId;
+      interaction.mode = event.button === 1 || event.button === 2 || event.shiftKey ? "pan" : "orbit";
+      interaction.x = event.clientX;
+      interaction.y = event.clientY;
+      plane.canvas.setPointerCapture(event.pointerId);
     });
 
-    window.addEventListener("mouseup", () => {
-      drag.active = false;
+    plane.canvas.addEventListener("pointermove", (event) => {
+      if (interaction.pointerId !== event.pointerId) {
+        return;
+      }
+
+      const deltaX = event.clientX - interaction.x;
+      const deltaY = event.clientY - interaction.y;
+      interaction.x = event.clientX;
+      interaction.y = event.clientY;
+
+      if (interaction.mode === "orbit") {
+        VIEW.yaw += deltaX * 0.009;
+        VIEW.pitch += deltaY * 0.0065;
+        VIEW.pitch = Math.max(-1.45, Math.min(1.45, VIEW.pitch));
+        return;
+      }
+
+      panView(deltaX, deltaY, plane.canvas.clientWidth, plane.canvas.clientHeight);
     });
 
-    plane.canvas.addEventListener("mouseleave", () => {
-      drag.active = false;
+    function endInteraction(event) {
+      if (interaction.pointerId !== event.pointerId) {
+        return;
+      }
+
+      if (plane.canvas.hasPointerCapture(event.pointerId)) {
+        plane.canvas.releasePointerCapture(event.pointerId);
+      }
+
+      interaction.pointerId = null;
+      interaction.mode = null;
+    }
+
+    plane.canvas.addEventListener("pointerup", endInteraction);
+    plane.canvas.addEventListener("pointercancel", endInteraction);
+
+    plane.canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+
+      const zoomFactor = Math.exp(-event.deltaY * 0.0012);
+      VIEW.zoom = Math.max(180, Math.min(1800, VIEW.zoom * zoomFactor));
+      VIEW.distance = Math.max(32, Math.min(150, VIEW.distance / Math.sqrt(zoomFactor)));
+    }, { passive: false });
+
+    plane.canvas.addEventListener("dblclick", () => {
+      resetView();
     });
 
     input.addEventListener("input", resetSimulation);
 
+    resetView();
     resetSimulation();
     animate();
   </script>
