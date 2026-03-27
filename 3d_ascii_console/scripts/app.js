@@ -2,7 +2,7 @@
   const terminal = document.getElementById("terminal");
   const CHAR_ASPECT = 0.56;
   const PALETTE = " .,-~:;=!*#$@";
-  const AUTO_RESUME_MS = 1800;
+  const AUTO_RESUME_MS = 0;
   const PROMPT = "root@host ~> ";
   const CARET_BLINK_MS = 530;
   const DRAG_BUTTON = {
@@ -62,6 +62,7 @@
     panX: 0,
     panY: 0,
     zoom: 6.5,
+    userInteracting: false,
     dragging: null,
     dragVector: null,
     lastPointerX: 0,
@@ -133,6 +134,10 @@
   }
 
   function updateAutoRotation(deltaSeconds, timestamp) {
+    if (state.userInteracting) {
+      return;
+    }
+
     if (!state.autoRotateEnabled && timestamp >= state.autoRotateResumeAt) {
       state.autoRotateEnabled = true;
     }
@@ -175,9 +180,9 @@
 
   function renderMenuView() {
     const lines = [];
-    lines.push("ASCII_OS / render3d");
+    lines.push("RENDER_3D");
     lines.push("");
-    lines.push("select figure");
+    lines.push("Select figure");
     lines.push("");
 
     figures.forEach((figure, index) => {
@@ -186,18 +191,18 @@
     });
 
     lines.push("");
+    lines.push("Menu controls");
     lines.push("UP / DOWN : choose figure");
     lines.push("ENTER     : render");
     lines.push("ESC       : return to shell");
     lines.push("");
-    lines.push("figure controls");
+    lines.push("Figure controls");
     lines.push("LMB drag      : arcball rotate");
     lines.push("RMB or MMB    : pan");
     lines.push("wheel         : zoom");
     lines.push("double LMB    : reset view");
-    lines.push("M             : open settings");
     lines.push("ESC           : close settings / leave render");
-
+    lines.push("M             : open settings");
     return lines.join("\n");
   }
 
@@ -623,11 +628,16 @@
     state.panX = 0;
     state.panY = 0;
     state.zoom = 6.5;
+    state.userInteracting = false;
     state.autoRotateEnabled = true;
     state.autoRotateResumeAt = 0;
   }
 
   function pauseAutoRotate() {
+    state.autoRotateEnabled = false;
+  }
+
+  function scheduleAutoRotateResume() {
     state.autoRotateEnabled = false;
     state.autoRotateResumeAt = performance.now() + AUTO_RESUME_MS;
   }
@@ -640,6 +650,7 @@
 
     if (event.button === DRAG_BUTTON.ROTATE) {
       state.dragging = "rotate";
+      state.userInteracting = true;
       state.dragVector = projectArcballVector(event.clientX, event.clientY);
       pauseAutoRotate();
       return;
@@ -647,6 +658,7 @@
 
     if (event.button === DRAG_BUTTON.PAN_MIDDLE || event.button === DRAG_BUTTON.PAN_RIGHT) {
       state.dragging = "pan";
+      state.userInteracting = true;
       state.lastPointerX = event.clientX;
       state.lastPointerY = event.clientY;
       pauseAutoRotate();
@@ -679,6 +691,10 @@
   }
 
   function onPointerUp() {
+    if (state.dragging) {
+      state.userInteracting = false;
+      scheduleAutoRotateResume();
+    }
     state.dragging = null;
     state.dragVector = null;
   }
@@ -691,7 +707,7 @@
     event.preventDefault();
     const delta = Math.sign(event.deltaY);
     state.zoom = clamp(3.2, 11.5, state.zoom + delta * 0.35);
-    pauseAutoRotate();
+    scheduleAutoRotateResume();
   }
 
   function onDoubleClick() {
