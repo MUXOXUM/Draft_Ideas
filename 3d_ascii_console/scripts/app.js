@@ -28,7 +28,7 @@
   const figures = [
     {
       id: "torus",
-      label: "Torus",
+      label: "TORUS",
       sliders: [
         { id: "size", label: "size", min: 0.7, max: 2.2, step: 0.1, value: 1.2 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.9 },
@@ -37,7 +37,7 @@
     },
     {
       id: "cube",
-      label: "Cube",
+      label: "CUBE",
       sliders: [
         { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.35 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.8 },
@@ -46,7 +46,7 @@
     },
     {
       id: "octahedron",
-      label: "Octahedron",
+      label: "OCTAHEDRON",
       sliders: [
         { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.45 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 1.0 },
@@ -198,15 +198,22 @@
 
   function renderMenuView() {
     const lines = [];
-    lines.push("RENDER_3D");
+    lines.push("+------------------------------------+");
+    lines.push("|             RENDER_3D              |");
+    lines.push("+------------------------------------+");
     lines.push("");
-    lines.push("Select figure");
-    lines.push("");
+    lines.push("+----+-------------------------------+");
+    lines.push("| ## | Figure                        |");
+    lines.push("+----+-------------------------------+");
 
     figures.forEach((figure, index) => {
       const cursor = index === state.menuIndex ? ">" : " ";
-      lines.push(`${cursor} ${figure.label}`);
+      const rowNumber = String(index + 1).padStart(2, "0");
+      const label = `${cursor} ${figure.label}`.padEnd(29, " ");
+      lines.push(`| ${rowNumber} | ${label} |`);
     });
+
+    lines.push("+----+-------------------------------+");
 
     lines.push("");
     lines.push("+----------------+-------------------+");
