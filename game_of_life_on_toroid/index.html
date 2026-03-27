@@ -126,18 +126,30 @@
     const baseProjectionScale = 760;
     const simStepMs = 800;
     const autoRotationSpeed = { x: 0.00009, y: 0.00013, z: 0.00007 };
+    const arcballSmoothing = 0.012;
+    const arcballSensitivity = 1.65;
+    const panSensitivity = 1;
+    const zoomStep = 0.0012;
+    const minZoom = 0.55;
+    const maxZoom = 2.4;
     const lightDirection = normalize({ x: -0.45, y: -0.9, z: 1 });
     const cellTemplates = createCellTemplates();
+    const initialViewQuaternion = quaternionFromEuler({ x: -0.78, y: 0.3, z: 0 });
 
     const state = {
       width: 0,
       height: 0,
-      viewRotation: { x: -0.78, y: 0.3, z: 0 },
+      viewQuaternion: initialViewQuaternion,
+      targetViewQuaternion: initialViewQuaternion,
       spinRotation: { x: 0, y: 0, z: 0.18 },
       autoRotation: { ...autoRotationSpeed },
       running: true,
       dragging: false,
+      dragMode: null,
+      lastArcballVector: { x: 0, y: 0, z: 1 },
       lastPointer: { x: 0, y: 0 },
+      panOffset: { x: 0, y: 0 },
+      zoom: 1,
       generation: 0,
       accumulator: 0,
       grid: [],
@@ -164,6 +176,10 @@
 
     function wrap(value, size) {
       return (value + size) % size;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
     }
 
     function nextGeneration() {
@@ -294,7 +310,7 @@
 
     function rotatePoint(point) {
       const spun = applyRotation(point, state.spinRotation);
-      return applyRotation(spun, state.viewRotation);
+      return applyQuaternion(spun, state.viewQuaternion);
     }
 
     function normalize(vector) {
@@ -306,12 +322,158 @@
       };
     }
 
+    function dot(a, b) {
+      return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    function cross(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+
+    function normalizeQuaternion(quaternion) {
+      const length = Math.hypot(quaternion.w, quaternion.x, quaternion.y, quaternion.z) || 1;
+      return {
+        w: quaternion.w / length,
+        x: quaternion.x / length,
+        y: quaternion.y / length,
+        z: quaternion.z / length
+      };
+    }
+
+    function multiplyQuaternions(a, b) {
+      return normalizeQuaternion({
+        w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+        x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+        y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+        z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+      });
+    }
+
+    function quaternionFromAxisAngle(axis, angle) {
+      const halfAngle = angle * 0.5;
+      const sinHalf = Math.sin(halfAngle);
+      return normalizeQuaternion({
+        w: Math.cos(halfAngle),
+        x: axis.x * sinHalf,
+        y: axis.y * sinHalf,
+        z: axis.z * sinHalf
+      });
+    }
+
+    function quaternionBetweenVectors(from, to) {
+      const axis = cross(from, to);
+      const axisLength = Math.hypot(axis.x, axis.y, axis.z);
+      const alignment = Math.max(-1, Math.min(1, dot(from, to)));
+
+      if (axisLength < 1e-6) {
+        if (alignment > 0.999999) {
+          return { w: 1, x: 0, y: 0, z: 0 };
+        }
+
+        const fallbackAxis = Math.abs(from.x) < 0.9
+          ? normalize(cross(from, { x: 1, y: 0, z: 0 }))
+          : normalize(cross(from, { x: 0, y: 1, z: 0 }));
+        return quaternionFromAxisAngle(fallbackAxis, Math.PI);
+      }
+
+      return quaternionFromAxisAngle(
+        {
+          x: axis.x / axisLength,
+          y: axis.y / axisLength,
+          z: axis.z / axisLength
+        },
+        Math.acos(alignment) * arcballSensitivity
+      );
+    }
+
+    function quaternionFromEuler(rotation) {
+      const qx = quaternionFromAxisAngle({ x: 1, y: 0, z: 0 }, rotation.x || 0);
+      const qy = quaternionFromAxisAngle({ x: 0, y: 1, z: 0 }, rotation.y || 0);
+      const qz = quaternionFromAxisAngle({ x: 0, y: 0, z: 1 }, rotation.z || 0);
+      return multiplyQuaternions(qz, multiplyQuaternions(qy, qx));
+    }
+
+    function applyQuaternion(point, quaternion) {
+      const qVector = { x: quaternion.x, y: quaternion.y, z: quaternion.z };
+      const uv = cross(qVector, point);
+      const uuv = cross(qVector, uv);
+
+      return {
+        x: point.x + 2 * (quaternion.w * uv.x + uuv.x),
+        y: point.y + 2 * (quaternion.w * uv.y + uuv.y),
+        z: point.z + 2 * (quaternion.w * uv.z + uuv.z)
+      };
+    }
+
+    function slerpQuaternions(from, to, t) {
+      let target = to;
+      let cosine = from.w * to.w + from.x * to.x + from.y * to.y + from.z * to.z;
+
+      if (cosine < 0) {
+        cosine = -cosine;
+        target = {
+          w: -to.w,
+          x: -to.x,
+          y: -to.y,
+          z: -to.z
+        };
+      }
+
+      if (cosine > 0.9995) {
+        return normalizeQuaternion({
+          w: from.w + (target.w - from.w) * t,
+          x: from.x + (target.x - from.x) * t,
+          y: from.y + (target.y - from.y) * t,
+          z: from.z + (target.z - from.z) * t
+        });
+      }
+
+      const theta = Math.acos(Math.max(-1, Math.min(1, cosine)));
+      const sinTheta = Math.sin(theta);
+      const fromWeight = Math.sin((1 - t) * theta) / sinTheta;
+      const toWeight = Math.sin(t * theta) / sinTheta;
+
+      return normalizeQuaternion({
+        w: from.w * fromWeight + target.w * toWeight,
+        x: from.x * fromWeight + target.x * toWeight,
+        y: from.y * fromWeight + target.y * toWeight,
+        z: from.z * fromWeight + target.z * toWeight
+      });
+    }
+
+    function projectPointerToArcball(event) {
+      const rect = canvas.getBoundingClientRect();
+      const radius = Math.min(rect.width, rect.height) * 0.5 || 1;
+      const x = (rect.width * 0.5 - (event.clientX - rect.left)) / radius;
+      const y = (rect.height * 0.5 - (event.clientY - rect.top)) / radius;
+      const lengthSquared = x * x + y * y;
+
+      if (lengthSquared <= 1) {
+        return {
+          x,
+          y,
+          z: Math.sqrt(1 - lengthSquared)
+        };
+      }
+
+      const scale = 1 / Math.sqrt(lengthSquared);
+      return {
+        x: x * scale,
+        y: y * scale,
+        z: 0
+      };
+    }
+
     function project(point) {
       const depth = point.z + state.sceneMetrics.cameraDistance;
-      const scale = state.sceneMetrics.projectionScale / depth;
+      const scale = state.sceneMetrics.projectionScale * state.zoom / depth;
       return {
-        x: point.x * scale + state.width / 2,
-        y: point.y * scale + state.height / 2,
+        x: point.x * scale + state.width / 2 + state.panOffset.x,
+        y: point.y * scale + state.height / 2 + state.panOffset.y,
         depth
       };
     }
@@ -403,6 +565,9 @@
     }
 
     function tick(deltaMs) {
+      const smoothing = 1 - Math.exp(-arcballSmoothing * deltaMs);
+      state.viewQuaternion = slerpQuaternions(state.viewQuaternion, state.targetViewQuaternion, smoothing);
+
       if (state.running) {
         state.spinRotation.x += state.autoRotation.x * deltaMs;
         state.spinRotation.y += state.autoRotation.y * deltaMs;
@@ -426,9 +591,16 @@
     }
 
     canvas.addEventListener("pointerdown", (event) => {
+      if (event.button === 2 || event.button === 1) {
+        state.dragMode = "pan";
+        state.lastPointer.x = event.clientX;
+        state.lastPointer.y = event.clientY;
+      } else {
+        state.dragMode = "rotate";
+        state.lastArcballVector = projectPointerToArcball(event);
+      }
+
       state.dragging = true;
-      state.lastPointer.x = event.clientX;
-      state.lastPointer.y = event.clientY;
       canvas.classList.add("dragging");
       canvas.setPointerCapture(event.pointerId);
     });
@@ -438,17 +610,23 @@
         return;
       }
 
-      const dx = event.clientX - state.lastPointer.x;
-      const dy = event.clientY - state.lastPointer.y;
-      state.lastPointer.x = event.clientX;
-      state.lastPointer.y = event.clientY;
+      if (state.dragMode === "pan") {
+        state.panOffset.x += (event.clientX - state.lastPointer.x) * panSensitivity;
+        state.panOffset.y += (event.clientY - state.lastPointer.y) * panSensitivity;
+        state.lastPointer.x = event.clientX;
+        state.lastPointer.y = event.clientY;
+        return;
+      }
 
-      state.viewRotation.y += dx * 0.006;
-      state.viewRotation.x += dy * 0.006;
+      const currentArcballVector = projectPointerToArcball(event);
+      const deltaQuaternion = quaternionBetweenVectors(state.lastArcballVector, currentArcballVector);
+      state.targetViewQuaternion = multiplyQuaternions(deltaQuaternion, state.targetViewQuaternion);
+      state.lastArcballVector = currentArcballVector;
     });
 
     function stopDragging(event) {
       state.dragging = false;
+      state.dragMode = null;
       canvas.classList.remove("dragging");
       if (event) {
         canvas.releasePointerCapture(event.pointerId);
@@ -458,9 +636,24 @@
     canvas.addEventListener("pointerup", stopDragging);
     canvas.addEventListener("pointerleave", () => {
       state.dragging = false;
+      state.dragMode = null;
       canvas.classList.remove("dragging");
     });
     canvas.addEventListener("pointercancel", stopDragging);
+    canvas.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+    });
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      state.zoom = clamp(state.zoom * Math.exp(-event.deltaY * zoomStep), minZoom, maxZoom);
+    }, { passive: false });
+    canvas.addEventListener("dblclick", () => {
+      state.targetViewQuaternion = initialViewQuaternion;
+      state.viewQuaternion = initialViewQuaternion;
+      state.panOffset.x = 0;
+      state.panOffset.y = 0;
+      state.zoom = 1;
+    });
 
     window.addEventListener("resize", resize);
 
