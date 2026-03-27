@@ -225,7 +225,7 @@
     const lines = [];
     lines.push(`settings / ${state.currentFigureId}`);
     lines.push("");
-    lines.push(`view x=${formatSigned(state.panX)} y=${formatSigned(state.panY)} zoom=${state.zoom.toFixed(2)} auto=${state.autoRotateEnabled ? "on" : "pause"}`);
+    lines.push(`view x=${formatSigned(state.panX)} y=${formatSigned(state.panY)} zoom=${state.zoom.toFixed(2)}`);
     lines.push("");
 
     figure.sliders.forEach((slider, index) => {
@@ -672,7 +672,7 @@
 
     if (state.dragging === "rotate") {
       const nextVector = projectArcballVector(event.clientX, event.clientY);
-      const deltaQuat = quatFromVectors(state.dragVector, nextVector);
+      const deltaQuat = quatFromVectors(nextVector, state.dragVector);
       state.userQuat = quatNormalize(quatMultiply(deltaQuat, state.userQuat));
       state.dragVector = nextVector;
       pauseAutoRotate();
