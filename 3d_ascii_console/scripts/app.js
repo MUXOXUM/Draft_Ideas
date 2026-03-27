@@ -5,6 +5,11 @@
   const AUTO_RESUME_MS = 0;
   const PROMPT = "root@host ~> ";
   const CARET_BLINK_MS = 530;
+  const STORAGE_KEYS = {
+    console: "ascii_os_console_settings",
+    figures: "ascii_os_figure_settings",
+    history: "ascii_os_command_history"
+  };
   const NAMED_COLORS = {
     green: "#00ff00",
     blue: "#3a7bff",
@@ -87,6 +92,7 @@
   };
 
   function boot() {
+    loadPersistedSettings();
     terminal.tabIndex = 0;
     terminal.setAttribute("role", "application");
     terminal.setAttribute("aria-label", "ASCII_OS console");
@@ -539,7 +545,11 @@
 
     if (input) {
       state.commandHistory.push(input);
+      if (state.commandHistory.length > 10) {
+        state.commandHistory = state.commandHistory.slice(-10);
+      }
       state.historyIndex = state.commandHistory.length;
+      persistCommandHistory();
     }
 
     state.commandInput = "";
@@ -555,6 +565,7 @@
       state.shellLines.push("render3d  - open figure selection");
       state.shellLines.push("color     - change text/background colors");
       state.shellLines.push("            usage: color <text> [background]");
+      state.shellLines.push("reboot    - clear saved browser data");
       trimShellBuffer();
       return;
     }
@@ -568,6 +579,11 @@
     if (command === "color") {
       handleColorCommand(args);
       trimShellBuffer();
+      return;
+    }
+
+    if (command === "reboot") {
+      rebootConsole();
       return;
     }
 
@@ -592,10 +608,8 @@
       return;
     }
 
-    document.documentElement.style.setProperty("--text", textColor);
-    if (backgroundColor) {
-      document.documentElement.style.setProperty("--bg", backgroundColor);
-    }
+    applyConsoleColors(textColor, backgroundColor || getConsoleColors().background);
+    persistConsoleSettings();
 
     state.shellLines.push(
       args.length === 1
@@ -615,6 +629,105 @@
     }
 
     return null;
+  }
+
+  function loadPersistedSettings() {
+    const storedConsole = readStorageJson(STORAGE_KEYS.console);
+    if (storedConsole && storedConsole.text && storedConsole.background) {
+      applyConsoleColors(storedConsole.text, storedConsole.background);
+    }
+
+    const storedHistory = readStorageJson(STORAGE_KEYS.history);
+    if (Array.isArray(storedHistory)) {
+      state.commandHistory = storedHistory
+        .filter((entry) => typeof entry === "string" && entry.trim())
+        .slice(-10);
+      state.historyIndex = state.commandHistory.length;
+    }
+
+    const storedFigures = readStorageJson(STORAGE_KEYS.figures);
+    if (!storedFigures || typeof storedFigures !== "object") {
+      return;
+    }
+
+    figures.forEach((figure) => {
+      const savedFigure = storedFigures[figure.id];
+      if (!savedFigure || typeof savedFigure !== "object") {
+        return;
+      }
+
+      figure.sliders.forEach((slider) => {
+        const savedValue = savedFigure[slider.id];
+        if (typeof savedValue !== "number" || Number.isNaN(savedValue)) {
+          return;
+        }
+
+        slider.value = clamp(slider.min, slider.max, savedValue);
+      });
+    });
+  }
+
+  function persistConsoleSettings() {
+    const colors = getConsoleColors();
+    writeStorageJson(STORAGE_KEYS.console, colors);
+  }
+
+  function persistCommandHistory() {
+    writeStorageJson(STORAGE_KEYS.history, state.commandHistory.slice(-10));
+  }
+
+  function persistFigureSettings() {
+    const payload = {};
+    figures.forEach((figure) => {
+      payload[figure.id] = {};
+      figure.sliders.forEach((slider) => {
+        payload[figure.id][slider.id] = slider.value;
+      });
+    });
+    writeStorageJson(STORAGE_KEYS.figures, payload);
+  }
+
+  function getConsoleColors() {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      text: styles.getPropertyValue("--text").trim(),
+      background: styles.getPropertyValue("--bg").trim()
+    };
+  }
+
+  function applyConsoleColors(text, background) {
+    document.documentElement.style.setProperty("--text", text);
+    document.documentElement.style.setProperty("--bg", background);
+  }
+
+  function readStorageJson(key) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStorageJson(key, value) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // Ignore storage errors and keep the terminal usable.
+    }
+  }
+
+  function clearPersistedSettings() {
+    try {
+      Object.values(STORAGE_KEYS).forEach((key) => window.localStorage.removeItem(key));
+    } catch {
+      // Ignore storage errors and continue with reload.
+    }
+  }
+
+  function rebootConsole() {
+    clearPersistedSettings();
+    window.location.reload();
   }
 
   function trimShellBuffer() {
@@ -811,6 +924,7 @@
 
   function adjustSlider(slider, direction) {
     slider.value = clamp(slider.min, slider.max, slider.value + slider.step * direction);
+    persistFigureSettings();
   }
 
   function getCurrentFigure() {

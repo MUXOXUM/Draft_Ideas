@@ -8,14 +8,6 @@ window.PROJECTS = [
     "topic": "-"
   },
   {
-    "title": "3D ASCII Render",
-    "path": "3d_ascii_render/index.html",
-    "readmePath": "3d_ascii_render/README.md",
-    "createdAt": "2025-01-18",
-    "updatedAt": "2026-03-21",
-    "topic": "sim"
-  },
-  {
     "title": "3D ASCII Console",
     "path": "3d_ascii_console/index.html",
     "readmePath": "3d_ascii_console/README.md",
