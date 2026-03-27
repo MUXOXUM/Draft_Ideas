@@ -39,6 +39,6 @@ window.PROJECTS = [
     "path": "optical_illusions/index.html",
     "createdAt": "2026-03-25",
     "updatedAt": "2026-03-25",
-    "topic": "art"
+    "topic": "-"
   }
 ];

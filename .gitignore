@@ -5,6 +5,8 @@ vendor/
 # Логи
 logs/
 *.log
+*.pid
+*.seed
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -45,12 +47,3 @@ __pycache__/
 # Временные файлы
 *.part
 *.cache
-
-# Файлы отладки
-*.log
-*.pid
-*.seed
-
-# Покрытие кода
-coverage/
-.nyc_output/
