@@ -3,7 +3,7 @@
   const CHAR_ASPECT = 0.56;
   const PALETTE = " .,-~:;=!*#$@";
   const AUTO_RESUME_MS = 0;
-  const PROMPT = "root@host ~> ";
+  const DEFAULT_PROMPT = "root@host ~> ";
   const CARET_BLINK_MS = 530;
   const STORAGE_KEYS = {
     console: "ascii_os_console_settings",
@@ -32,27 +32,36 @@
       id: "torus",
       label: "TORUS",
       sliders: [
-        { id: "size", label: "size", min: 0.7, max: 2.2, step: 0.1, value: 1.2 },
-        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.9 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 }
+        { id: "size", label: "size", min: 0.7, max: 2.2, step: 0.1, value: 1.6 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
+        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
+        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
     {
       id: "cube",
       label: "CUBE",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.35 },
-        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.8 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 }
+        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.75 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
+        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
+        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
     {
       id: "octahedron",
       label: "OCTAHEDRON",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.45 },
-        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 1.0 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 }
+        { id: "size", label: "size", min: 0.8, max: 4.0, step: 0.1, value: 3.2 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
+        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
+        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     }
   ];
@@ -72,6 +81,7 @@
     sliderIndex: 0,
     settingsVisible: false,
     currentFigureId: null,
+    prompt: DEFAULT_PROMPT,
     viewportCols: 120,
     viewportRows: 44,
     renderCols: 100,
@@ -95,6 +105,7 @@
 
   function boot() {
     loadPersistedSettings();
+    state.prompt = buildPrompt();
     terminal.tabIndex = 0;
     terminal.setAttribute("role", "application");
     terminal.setAttribute("aria-label", "ASCII_OS console");
@@ -194,7 +205,7 @@
     const caretVisible = Math.floor(timestamp / CARET_BLINK_MS) % 2 === 0;
     const lines = [];
     lines.push(...state.shellLines);
-    lines.push(`${PROMPT}${state.commandInput}${caretVisible ? "_" : " "}`);
+    lines.push(`${state.prompt}${state.commandInput}${caretVisible ? "_" : " "}`);
     return lines.join("\n");
   }
 
@@ -330,13 +341,14 @@
     const size = getSliderValue("size");
     const resolution = getRenderResolution();
     const rotation = getSceneQuaternion();
+    const light = getLightDirection();
+    const ambient = getAmbientLight();
     const transformed = mesh.vertices.map((vertex) => {
       const scaled = scaleVec3(vertex, size);
       return quatRotateVec3(rotation, scaled);
     });
 
     const screenVerts = transformed.map((vertex) => projectPoint(vertex));
-    const light = normalizeVec3([0.55, 0.8, -0.7]);
 
     mesh.faces.forEach((face) => {
       const a = transformed[face[0]];
@@ -347,7 +359,8 @@
         return;
       }
 
-      const brightness = clamp(0.15, 1, 0.2 + Math.max(0, -dotVec3(normal, light)) * 0.8);
+      const diffuse = Math.max(0, -dotVec3(normal, light));
+      const brightness = clamp(ambient, 1, ambient + diffuse * (1 - ambient));
       rasterizeTriangle(
         frame,
         screenVerts[face[0]],
@@ -365,7 +378,8 @@
     const size = getSliderValue("size");
     const resolution = getRenderResolution();
     const rotation = getSceneQuaternion();
-    const light = normalizeVec3([0.45, 0.8, -0.6]);
+    const light = getLightDirection();
+    const ambient = getAmbientLight();
     const major = 1.45 * size;
     const minor = 0.58 * size;
     const majorSteps = Math.max(18, Math.floor(state.renderCols * 0.34 * resolution));
@@ -386,7 +400,8 @@
         const worldPoint = quatRotateVec3(rotation, point);
         const worldNormal = normalizeVec3(quatRotateVec3(rotation, normal));
         const projected = projectPoint(worldPoint);
-        const brightness = clamp(0.06, 1, 0.15 + Math.max(0, -dotVec3(worldNormal, light)) * 0.85);
+        const diffuse = Math.max(0, -dotVec3(worldNormal, light));
+        const brightness = clamp(ambient * 0.6, 1, ambient + diffuse * (1 - ambient));
         plotPoint(frame, projected.x, projected.y, projected.depth, brightness);
       }
     }
@@ -554,7 +569,7 @@
     const parts = input ? input.split(/\s+/) : [];
     const command = parts[0] ? parts[0].toLowerCase() : "";
     const args = parts.slice(1);
-    state.shellLines.push(`${PROMPT}${rawInput}`);
+    state.shellLines.push(`${state.prompt}${rawInput}`);
 
     if (input) {
       state.commandHistory.push(input);
@@ -653,6 +668,67 @@
 
     if (/^#([0-9a-f]{6}|[0-9a-f]{3})$/i.test(normalized)) {
       return normalized;
+    }
+
+    return null;
+  }
+
+  function buildPrompt() {
+    const browser = detectBrowserName();
+    const os = detectOsName();
+    if (!browser || !os) {
+      return DEFAULT_PROMPT;
+    }
+
+    return `${browser}@${os} ~> `;
+  }
+
+  function detectBrowserName() {
+    const ua = window.navigator.userAgent || "";
+    const brands = window.navigator.userAgentData && Array.isArray(window.navigator.userAgentData.brands)
+      ? window.navigator.userAgentData.brands.map((brand) => brand.brand).join(" ")
+      : "";
+    const source = `${brands} ${ua}`.toLowerCase();
+
+    if (source.includes("firefox")) {
+      return "firefox";
+    }
+    if (source.includes("edg")) {
+      return "edge";
+    }
+    if (source.includes("opr") || source.includes("opera")) {
+      return "opera";
+    }
+    if (source.includes("chrome") || source.includes("chromium")) {
+      return "chrome";
+    }
+    if (source.includes("safari") && !source.includes("chrome") && !source.includes("chromium")) {
+      return "safari";
+    }
+
+    return null;
+  }
+
+  function detectOsName() {
+    const nav = window.navigator;
+    const platform = (nav.userAgentData && nav.userAgentData.platform) || nav.platform || "";
+    const ua = nav.userAgent || "";
+    const source = `${platform} ${ua}`.toLowerCase();
+
+    if (source.includes("windows")) {
+      return "windows";
+    }
+    if (source.includes("android")) {
+      return "android";
+    }
+    if (source.includes("iphone") || source.includes("ipad") || source.includes("ios")) {
+      return "ios";
+    }
+    if (source.includes("mac") || source.includes("darwin")) {
+      return "macos";
+    }
+    if (source.includes("linux") || source.includes("x11")) {
+      return "linux";
     }
 
     return null;
@@ -794,6 +870,17 @@
       state.menuIndex = clamp(0, Math.max(0, figures.length - 1), savedMenuIndex);
       if (storedUi.mode === "menu") {
         state.mode = "menu";
+      } else if (storedUi.mode === "render") {
+        const savedFigureId = typeof storedUi.currentFigureId === "string" ? storedUi.currentFigureId : null;
+        const figureExists = figures.some((figure) => figure.id === savedFigureId);
+        if (figureExists) {
+          state.mode = "render";
+          state.currentFigureId = savedFigureId;
+          state.settingsVisible = Boolean(storedUi.settingsVisible);
+          const savedSliderIndex = typeof storedUi.sliderIndex === "number" ? Math.floor(storedUi.sliderIndex) : 0;
+          const sliderCount = getCurrentFigure().sliders.length;
+          state.sliderIndex = clamp(0, Math.max(0, sliderCount - 1), savedSliderIndex);
+        }
       }
     }
 
@@ -836,9 +923,18 @@
   }
 
   function persistUiState() {
+    const persistedMode = state.mode === "render"
+      ? "render"
+      : state.mode === "menu"
+        ? "menu"
+        : "shell";
+
     writeStorageJson(STORAGE_KEYS.ui, {
-      mode: state.mode === "menu" ? "menu" : "shell",
-      menuIndex: state.menuIndex
+      mode: persistedMode,
+      menuIndex: state.menuIndex,
+      currentFigureId: state.currentFigureId,
+      settingsVisible: state.settingsVisible,
+      sliderIndex: state.sliderIndex
     });
   }
 
@@ -933,17 +1029,20 @@
     const figure = getCurrentFigure();
     if (event.key === "m" || event.key === "M") {
       state.settingsVisible = !state.settingsVisible;
+      persistUiState();
       return;
     }
 
     if (event.key === "Escape") {
       if (state.settingsVisible) {
         state.settingsVisible = false;
+        persistUiState();
         return;
       }
       state.mode = "menu";
       state.currentFigureId = null;
       state.sliderIndex = 0;
+      state.settingsVisible = false;
       persistUiState();
       return;
     }
@@ -954,11 +1053,13 @@
 
     if (event.key === "ArrowUp") {
       state.sliderIndex = (state.sliderIndex - 1 + figure.sliders.length) % figure.sliders.length;
+      persistUiState();
       return;
     }
 
     if (event.key === "ArrowDown") {
       state.sliderIndex = (state.sliderIndex + 1) % figure.sliders.length;
+      persistUiState();
       return;
     }
 
@@ -1107,6 +1208,21 @@
     const figure = getCurrentFigure();
     const slider = figure.sliders.find((item) => item.id === id);
     return slider ? slider.value : 0;
+  }
+
+  function getLightDirection() {
+    const yaw = (getSliderValue("light_yaw") * Math.PI) / 180;
+    const pitch = (getSliderValue("light_pitch") * Math.PI) / 180;
+    const cosPitch = Math.cos(pitch);
+    return normalizeVec3([
+      Math.sin(yaw) * cosPitch,
+      Math.sin(pitch),
+      -Math.cos(yaw) * cosPitch
+    ]);
+  }
+
+  function getAmbientLight() {
+    return clamp(0, 0.8, getSliderValue("ambient"));
   }
 
   function getRenderResolution() {
