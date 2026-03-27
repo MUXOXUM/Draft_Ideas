@@ -51,6 +51,7 @@
     historyIndex: 0,
     menuIndex: 0,
     sliderIndex: 0,
+    settingsVisible: false,
     currentFigureId: null,
     viewportCols: 120,
     viewportRows: 44,
@@ -166,7 +167,7 @@
 
   function renderShellView(timestamp) {
     const caretVisible = Math.floor(timestamp / CARET_BLINK_MS) % 2 === 0;
-    const lines = ["ASCII_OS", ""];
+    const lines = [];
     lines.push(...state.shellLines);
     lines.push(`${PROMPT}${state.commandInput}${caretVisible ? "_" : " "}`);
     return lines.join("\n");
@@ -188,29 +189,37 @@
     lines.push("UP / DOWN : choose figure");
     lines.push("ENTER     : render");
     lines.push("ESC       : return to shell");
+    lines.push("");
+    lines.push("figure controls");
+    lines.push("LMB drag      : arcball rotate");
+    lines.push("RMB or MMB    : pan");
+    lines.push("wheel         : zoom");
+    lines.push("double LMB    : reset view");
+    lines.push("M             : open settings");
+    lines.push("ESC           : close settings / leave render");
 
     return lines.join("\n");
   }
 
   function renderRenderView() {
-    const headerLines = [
-      `ASCII_OS / render / ${state.currentFigureId}`,
-      "ESC shell | UP DOWN slider | LEFT RIGHT change | double click reset"
-    ];
-    const footerLines = buildFooterLines();
-    const reservedRows = headerLines.length + footerLines.length + 2;
+    const reservedRows = 0;
     state.renderRows = Math.max(12, state.viewportRows - reservedRows);
     state.renderCols = Math.max(42, state.viewportCols);
 
     const frame = createFrameBuffer(state.renderCols, state.renderRows);
     renderCurrentFigure(frame);
+    if (state.settingsVisible) {
+      overlaySettings(frame);
+    }
 
-    return [...headerLines, "", ...frame.lines, "", ...footerLines].join("\n");
+    return frame.lines.join("\n");
   }
 
-  function buildFooterLines() {
+  function buildSettingsLines() {
     const figure = getCurrentFigure();
     const lines = [];
+    lines.push(`settings / ${state.currentFigureId}`);
+    lines.push("");
     lines.push(`view x=${formatSigned(state.panX)} y=${formatSigned(state.panY)} zoom=${state.zoom.toFixed(2)} auto=${state.autoRotateEnabled ? "on" : "pause"}`);
     lines.push("");
 
@@ -220,6 +229,30 @@
     });
 
     return lines;
+  }
+
+  function overlaySettings(frame) {
+    const content = buildSettingsLines();
+    const innerWidth = Math.max(...content.map((line) => line.length), 18);
+    const boxWidth = Math.min(frame.width - 2, innerWidth + 4);
+    const boxHeight = Math.min(frame.height - 2, content.length + 2);
+    const startX = Math.max(0, Math.floor((frame.width - boxWidth) / 2));
+    const startY = Math.max(0, Math.floor((frame.height - boxHeight) / 2));
+    const topBottom = `+${"-".repeat(Math.max(0, boxWidth - 2))}+`;
+
+    drawText(frame, startX, startY, topBottom);
+    for (let row = 1; row < boxHeight - 1; row += 1) {
+      drawText(frame, startX, startY + row, `|${" ".repeat(Math.max(0, boxWidth - 2))}|`);
+    }
+    drawText(frame, startX, startY + boxHeight - 1, topBottom);
+
+    const visibleContent = content.slice(0, Math.max(0, boxHeight - 2));
+    visibleContent.forEach((line, index) => {
+      const clipped = line.slice(0, Math.max(0, boxWidth - 4));
+      drawText(frame, startX + 2, startY + 1 + index, clipped);
+    });
+
+    finalizeFrame(frame);
   }
 
   function renderSliderLine(slider, selected) {
@@ -392,13 +425,30 @@
     }
   }
 
+  function drawText(frame, x, y, text) {
+    if (y < 0 || y >= frame.height) {
+      return;
+    }
+
+    for (let i = 0; i < text.length; i += 1) {
+      const px = x + i;
+      if (px < 0 || px >= frame.width) {
+        continue;
+      }
+
+      const index = y * frame.width + px;
+      frame.chars[index] = text[i];
+      frame.depth[index] = Infinity;
+    }
+  }
+
   function onKeyDown(event) {
     if (state.mode === "shell") {
       handleShellKeys(event);
       return;
     }
 
-    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape"].includes(event.key)) {
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Escape", "m", "M"].includes(event.key)) {
       event.preventDefault();
     }
 
@@ -473,14 +523,6 @@
       state.shellLines.push("available commands:");
       state.shellLines.push("help      - show this help");
       state.shellLines.push("render3d  - open figure selection");
-      state.shellLines.push("");
-      state.shellLines.push("render3d controls:");
-      state.shellLines.push("LMB drag      - arcball rotate");
-      state.shellLines.push("RMB or MMB    - pan");
-      state.shellLines.push("wheel         - zoom");
-      state.shellLines.push("double LMB    - reset view");
-      state.shellLines.push("UP / DOWN     - choose slider");
-      state.shellLines.push("LEFT / RIGHT  - change slider");
       trimShellBuffer();
       return;
     }
@@ -527,10 +569,23 @@
 
   function handleRenderKeys(event) {
     const figure = getCurrentFigure();
+    if (event.key === "m" || event.key === "M") {
+      state.settingsVisible = !state.settingsVisible;
+      return;
+    }
+
     if (event.key === "Escape") {
+      if (state.settingsVisible) {
+        state.settingsVisible = false;
+        return;
+      }
       state.mode = "shell";
       state.currentFigureId = null;
       state.sliderIndex = 0;
+      return;
+    }
+
+    if (!state.settingsVisible) {
       return;
     }
 
@@ -558,6 +613,7 @@
     state.currentFigureId = figureId;
     state.mode = "render";
     state.sliderIndex = 0;
+    state.settingsVisible = false;
     resetView();
   }
 
