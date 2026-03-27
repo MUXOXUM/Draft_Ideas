@@ -131,8 +131,11 @@
     .readme-link {
       margin-left: auto;
       min-width: 1.5rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
       text-align: right;
-      text-decoration: none;
+      cursor: pointer;
       color: var(--muted);
       font-size: 1.1rem;
       font-weight: 700;
@@ -143,6 +146,73 @@
     .readme-link:hover {
       color: #ffffff;
       opacity: 0.92;
+    }
+
+    .readme-modal[hidden] {
+      display: none;
+    }
+
+    .readme-modal {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.62);
+      backdrop-filter: blur(6px);
+      z-index: 10;
+    }
+
+    .readme-dialog {
+      width: min(760px, 100%);
+      max-height: min(80vh, 900px);
+      overflow: auto;
+      padding: 24px 24px 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(14, 14, 18, 0.96);
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45);
+    }
+
+    .readme-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .readme-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .readme-close {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      width: 2rem;
+      height: 2rem;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .readme-close:hover {
+      color: #ffffff;
+      border-color: var(--line-strong);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .readme-content {
+      margin: 0;
+      color: var(--text);
+      font: 0.98rem/1.6 "Consolas", "Courier New", monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     @media (max-width: 980px) {
@@ -167,9 +237,80 @@
     <h1>Сборник идей</h1>
     <ol class="projects" data-loading="true"></ol>
   </main>
+  <div class="readme-modal" hidden>
+    <div class="readme-dialog" role="dialog" aria-modal="true" aria-labelledby="readme-modal-title">
+      <div class="readme-header">
+        <h2 class="readme-title" id="readme-modal-title">README</h2>
+        <button class="readme-close" type="button" aria-label="Закрыть окно">×</button>
+      </div>
+      <pre class="readme-content"></pre>
+    </div>
+  </div>
   <script src="./projects.js"></script>
   <script>
     const projectsContainer = document.querySelector(".projects");
+    const readmeModal = document.querySelector(".readme-modal");
+    const readmeDialog = document.querySelector(".readme-dialog");
+    const readmeTitle = document.querySelector(".readme-title");
+    const readmeContent = document.querySelector(".readme-content");
+    const readmeCloseButton = document.querySelector(".readme-close");
+
+    function openReadmeModal(project) {
+      readmeTitle.textContent = `${project.title} README`;
+      readmeModal.hidden = false;
+      document.body.style.overflow = "hidden";
+      readmeContent.textContent = "Загружаю README...";
+      readmeCloseButton.focus();
+
+      if (!project.readmePath) {
+        readmeContent.textContent = "README пока не добавлен.";
+        return;
+      }
+
+      fetch(project.readmePath)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          return response.text();
+        })
+        .then((text) => {
+          if (readmeModal.hidden) {
+            return;
+          }
+
+          readmeContent.textContent = text || "README пустой.";
+        })
+        .catch((error) => {
+          console.error(error);
+
+          if (readmeModal.hidden) {
+            return;
+          }
+
+          readmeContent.textContent = "Не удалось загрузить README. Если страница открыта как файл, запусти её через локальный сервер.";
+        });
+    }
+
+    function closeReadmeModal() {
+      readmeModal.hidden = true;
+      document.body.style.overflow = "";
+    }
+
+    readmeCloseButton.addEventListener("click", closeReadmeModal);
+
+    readmeModal.addEventListener("click", (event) => {
+      if (!readmeDialog.contains(event.target)) {
+        closeReadmeModal();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !readmeModal.hidden) {
+        closeReadmeModal();
+      }
+    });
 
     function groupProjectsByTopic(projects) {
       const topics = new Map();
@@ -233,11 +374,12 @@
           row.append(link);
 
           if (project.readmePath) {
-            const readmeLink = document.createElement("a");
+            const readmeLink = document.createElement("button");
             readmeLink.className = "readme-link";
-            readmeLink.href = project.readmePath;
+            readmeLink.type = "button";
             readmeLink.textContent = "?";
             readmeLink.setAttribute("aria-label", `Открыть README проекта ${project.title}`);
+            readmeLink.addEventListener("click", () => openReadmeModal(project));
             row.append(readmeLink);
           }
 
