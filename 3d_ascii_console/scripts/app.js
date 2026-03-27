@@ -560,12 +560,7 @@
     }
 
     if (command === "help") {
-      state.shellLines.push("available commands:");
-      state.shellLines.push("help      - show this help");
-      state.shellLines.push("render3d  - open figure selection");
-      state.shellLines.push("color     - change text/background colors");
-      state.shellLines.push("            usage: color <text> [background]");
-      state.shellLines.push("reboot    - clear saved browser data");
+      getHelpLines().forEach((line) => state.shellLines.push(line));
       trimShellBuffer();
       return;
     }
@@ -573,6 +568,12 @@
     if (command === "render3d") {
       state.mode = "menu";
       state.menuIndex = 0;
+      return;
+    }
+
+    if (command === "sysinfo") {
+      getSystemInfoLines().forEach((line) => state.shellLines.push(line));
+      trimShellBuffer();
       return;
     }
 
@@ -608,13 +609,19 @@
       return;
     }
 
-    applyConsoleColors(textColor, backgroundColor || getConsoleColors().background);
+    const finalBackground = backgroundColor || getConsoleColors().background;
+    if (normalizeHexColor(textColor) === normalizeHexColor(finalBackground)) {
+      state.shellLines.push("text and background colors must be different");
+      return;
+    }
+
+    applyConsoleColors(textColor, finalBackground);
     persistConsoleSettings();
 
     state.shellLines.push(
       args.length === 1
         ? `text color changed to ${textColor}`
-        : `text/background changed to ${textColor} ${backgroundColor}`
+        : `text/background changed to ${textColor} ${finalBackground}`
     );
   }
 
@@ -629,6 +636,103 @@
     }
 
     return null;
+  }
+
+  function normalizeHexColor(value) {
+    const hex = value.trim().toLowerCase();
+    if (/^#[0-9a-f]{6}$/i.test(hex)) {
+      return hex;
+    }
+
+    if (/^#[0-9a-f]{3}$/i.test(hex)) {
+      return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+    }
+
+    return hex;
+  }
+
+  function getHelpLines() {
+    return [
+      "+----------+--------------------------------------+",
+      "| Command  | Description                          |",
+      "+----------+--------------------------------------+",
+      "| help     | show this help                       |",
+      "| render3d | open figure selection                |",
+      "| sysinfo  | show browser system info             |",
+      "| color    | change text/background colors        |",
+      "| reboot   | clear saved browser data             |",
+      "+----------+--------------------------------------+",
+      "usage: color <text> [background]"
+    ];
+  }
+
+  function getSystemInfoLines() {
+    const nav = window.navigator;
+    const screenInfo = window.screen;
+    const tz = safeTimeZone();
+    const gpuInfo = getGpuInfo();
+    const rows = [
+      ["screen", `${screenInfo.width}x${screenInfo.height} px`],
+      ["viewport", `${window.innerWidth}x${window.innerHeight} px`],
+      ["language", nav.language || "unknown"],
+      ["platform", nav.platform || "unknown"],
+      ["timezone", tz],
+      ["cpu cores", String(nav.hardwareConcurrency || "unknown")],
+      ["memory", nav.deviceMemory ? `${nav.deviceMemory} GB` : "unknown"],
+      ["touch", nav.maxTouchPoints ? `yes (${nav.maxTouchPoints})` : "no"],
+      ["online", nav.onLine ? "yes" : "no"],
+      ["user agent", nav.userAgent || "unknown"],
+      ["gpu", gpuInfo.renderer || gpuInfo.vendor || "unavailable"]
+    ];
+
+    const keyWidth = Math.max(...rows.map(([key]) => key.length), 6);
+    const valueWidth = Math.max(...rows.map(([, value]) => value.length), 12);
+    const border = `+${"-".repeat(keyWidth + 2)}+${"-".repeat(valueWidth + 2)}+`;
+    const lines = [
+      border,
+      `| ${"Field".padEnd(keyWidth, " ")} | ${"Value".padEnd(valueWidth, " ")} |`,
+      border
+    ];
+
+    rows.forEach(([key, value]) => {
+      lines.push(`| ${key.padEnd(keyWidth, " ")} | ${value.padEnd(valueWidth, " ")} |`);
+    });
+
+    lines.push(border);
+    return lines;
+  }
+
+  function safeTimeZone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || "unknown";
+    } catch {
+      return "unknown";
+    }
+  }
+
+  function getGpuInfo() {
+    try {
+      const canvas = document.createElement("canvas");
+      const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+      if (!gl) {
+        return {};
+      }
+
+      const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      if (debugInfo) {
+        return {
+          vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+          renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+        };
+      }
+
+      return {
+        vendor: gl.getParameter(gl.VENDOR),
+        renderer: gl.getParameter(gl.RENDERER)
+      };
+    } catch {
+      return {};
+    }
   }
 
   function loadPersistedSettings() {
