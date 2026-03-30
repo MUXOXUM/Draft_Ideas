@@ -32,11 +32,12 @@
       id: "sphere",
       label: "SPHERE",
       sliders: [
-        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 2.4 },
+        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 2.5 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.25 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.9 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
         { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "show_backfaces", label: "back", type: "toggle", value: true },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.2 }
       ]
     },
@@ -49,6 +50,7 @@
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
         { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "show_backfaces", label: "back", type: "toggle", value: true },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
@@ -56,7 +58,7 @@
       id: "cube",
       label: "CUBE",
       sliders: [
-        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 1.75 },
+        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 1.8 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
@@ -80,7 +82,7 @@
       id: "icosahedron",
       label: "ICOSAHEDRON",
       sliders: [
-        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 1.9 },
+        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 3.0 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
@@ -92,7 +94,7 @@
       id: "star_polyhedron",
       label: "STAR POLY",
       sliders: [
-        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 1.8 },
+        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 2.0 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
@@ -104,11 +106,12 @@
       id: "mobius_strip",
       label: "MOBIUS STRIP",
       sliders: [
-        { id: "size", label: "size", min: 0.5, max: 4.0, step: 0.1, value: 1.5 },
+        { id: "size", label: "size", min: 0.5, max: 4.0, step: 0.1, value: 2.3 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.35 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.8 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
         { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
         { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "show_backfaces", label: "back", type: "toggle", value: true },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.18 }
       ]
     }
@@ -337,6 +340,12 @@
   }
 
   function renderSliderLine(slider, selected) {
+    if (slider.type === "toggle") {
+      const cursor = selected ? ">" : " ";
+      const marker = slider.value ? "[x]" : "[ ]";
+      return `${cursor} ${slider.label.padEnd(6, " ")} ${marker}`;
+    }
+
     const width = Math.max(10, Math.min(24, state.renderCols - 28));
     const value = slider.value;
     const ratio = (value - slider.min) / (slider.max - slider.min || 1);
@@ -348,6 +357,16 @@
 
   function renderCurrentFigure(frame) {
     const figureId = state.currentFigureId;
+    if (figureId === "sphere") {
+      renderSphere(frame);
+      return;
+    }
+
+    if (figureId === "mobius_strip") {
+      renderMobiusStrip(frame);
+      return;
+    }
+
     if (figureId === "torus") {
       renderTorus(frame);
       return;
@@ -408,12 +427,58 @@
     finalizeFrame(frame);
   }
 
+  function renderSphere(frame) {
+    const size = getSliderValue("size");
+    const resolution = getRenderResolution();
+    const rotation = getSceneQuaternion();
+    const light = getLightDirection();
+    const ambient = getAmbientLight();
+    const showBackfaces = shouldShowHiddenParametricSurface();
+    const radius = 1.25 * size;
+    const latSteps = Math.max(16, Math.floor(state.renderRows * 0.9 * resolution));
+    const lonSteps = Math.max(24, Math.floor(state.renderCols * 0.32 * resolution));
+
+    for (let latIndex = 0; latIndex <= latSteps; latIndex += 1) {
+      const theta = (latIndex / latSteps) * Math.PI;
+      const sinTheta = Math.sin(theta);
+      const cosTheta = Math.cos(theta);
+
+      for (let lonIndex = 0; lonIndex < lonSteps; lonIndex += 1) {
+        const phi = (lonIndex / lonSteps) * Math.PI * 2;
+        const cosPhi = Math.cos(phi);
+        const sinPhi = Math.sin(phi);
+        const point = [
+          radius * sinTheta * cosPhi,
+          radius * cosTheta,
+          radius * sinTheta * sinPhi
+        ];
+        const normal = normalizeVec3([
+          sinTheta * cosPhi,
+          cosTheta,
+          sinTheta * sinPhi
+        ]);
+        const worldNormal = normalizeVec3(quatRotateVec3(rotation, normal));
+        if (!showBackfaces && worldNormal[2] >= 0) {
+          continue;
+        }
+        const worldPoint = quatRotateVec3(rotation, point);
+        const projected = projectPoint(worldPoint);
+        const diffuse = Math.max(0, -dotVec3(worldNormal, light));
+        const brightness = clamp(ambient * 0.65, 1, ambient + diffuse * (1 - ambient));
+        plotPoint(frame, projected.x, projected.y, projected.depth, brightness);
+      }
+    }
+
+    finalizeFrame(frame);
+  }
+
   function renderTorus(frame) {
     const size = getSliderValue("size");
     const resolution = getRenderResolution();
     const rotation = getSceneQuaternion();
     const light = getLightDirection();
     const ambient = getAmbientLight();
+    const showBackfaces = shouldShowHiddenParametricSurface();
     const major = 1.45 * size;
     const minor = 0.58 * size;
     const majorSteps = Math.max(18, Math.floor(state.renderCols * 0.34 * resolution));
@@ -431,11 +496,67 @@
         const ring = major + minor * cosV;
         const point = [ring * cosU, minor * sinV, ring * sinU];
         const normal = normalizeVec3([cosV * cosU, sinV, cosV * sinU]);
-        const worldPoint = quatRotateVec3(rotation, point);
         const worldNormal = normalizeVec3(quatRotateVec3(rotation, normal));
+        if (!showBackfaces && worldNormal[2] >= 0) {
+          continue;
+        }
+        const worldPoint = quatRotateVec3(rotation, point);
         const projected = projectPoint(worldPoint);
         const diffuse = Math.max(0, -dotVec3(worldNormal, light));
         const brightness = clamp(ambient * 0.6, 1, ambient + diffuse * (1 - ambient));
+        plotPoint(frame, projected.x, projected.y, projected.depth, brightness);
+      }
+    }
+
+    finalizeFrame(frame);
+  }
+
+  function renderMobiusStrip(frame) {
+    const size = getSliderValue("size");
+    const resolution = getRenderResolution();
+    const rotation = getSceneQuaternion();
+    const light = getLightDirection();
+    const ambient = getAmbientLight();
+    const showBackfaces = shouldShowHiddenParametricSurface();
+    const uSteps = Math.max(48, Math.floor(state.renderCols * 0.55 * resolution));
+    const vSteps = Math.max(10, Math.floor(state.renderRows * 0.22 * resolution));
+
+    for (let uIndex = 0; uIndex < uSteps; uIndex += 1) {
+      const u = (uIndex / uSteps) * Math.PI * 2;
+      const cosU = Math.cos(u);
+      const sinU = Math.sin(u);
+      const cosHalfU = Math.cos(u * 0.5);
+      const sinHalfU = Math.sin(u * 0.5);
+
+      for (let vIndex = 0; vIndex <= vSteps; vIndex += 1) {
+        const v = (-0.42 + (vIndex / vSteps) * 0.84) * size;
+        const radius = size + v * cosHalfU;
+        const point = [
+          radius * cosU,
+          v * sinHalfU * 1.15,
+          radius * sinU
+        ];
+
+        // Tangents of the Mobius parametrization give a stable normal without face artifacts.
+        const tangentU = [
+          -(size + v * cosHalfU) * sinU - 0.5 * v * sinHalfU * cosU,
+          0.5 * v * cosHalfU * 1.15,
+          (size + v * cosHalfU) * cosU - 0.5 * v * sinHalfU * sinU
+        ];
+        const tangentV = [
+          cosHalfU * cosU,
+          sinHalfU * 1.15,
+          cosHalfU * sinU
+        ];
+        const normal = normalizeVec3(crossVec3(tangentV, tangentU));
+        const worldNormal = normalizeVec3(quatRotateVec3(rotation, normal));
+        if (!showBackfaces && worldNormal[2] >= 0) {
+          continue;
+        }
+        const worldPoint = quatRotateVec3(rotation, point);
+        const projected = projectPoint(worldPoint);
+        const diffuse = Math.max(0, Math.abs(-dotVec3(worldNormal, light)));
+        const brightness = clamp(ambient * 0.7, 1, ambient + diffuse * (1 - ambient));
         plotPoint(frame, projected.x, projected.y, projected.depth, brightness);
       }
     }
@@ -646,6 +767,12 @@
       return;
     }
 
+    if (command === "pwd") {
+      state.shellLines.push(window.location.pathname || "/");
+      trimShellBuffer();
+      return;
+    }
+
     if (command === "clear") {
       clearShellScreen();
       return;
@@ -818,6 +945,7 @@
       "| Command  | Flags | Description                          |",
       "+----------+-------+--------------------------------------+",
       "| help     |       | show this help                       |",
+      "| pwd      |       | show current pathname                |",
       "| render3d | -h    | open figure selection                |",
       "| sysinfo  |       | show browser system info             |",
       "| clear    |       | clear terminal text                  |",
@@ -1017,6 +1145,13 @@
 
       figure.sliders.forEach((slider) => {
         const savedValue = savedFigure[slider.id];
+        if (slider.type === "toggle") {
+          if (typeof savedValue === "boolean") {
+            slider.value = savedValue;
+          }
+          return;
+        }
+
         if (typeof savedValue !== "number" || Number.isNaN(savedValue)) {
           return;
         }
@@ -1316,6 +1451,12 @@
   }
 
   function adjustSlider(slider, direction) {
+    if (slider.type === "toggle") {
+      slider.value = !slider.value;
+      persistFigureSettings();
+      return;
+    }
+
     slider.value = clamp(slider.min, slider.max, slider.value + slider.step * direction);
     persistFigureSettings();
   }
@@ -1328,6 +1469,12 @@
     const figure = getCurrentFigure();
     const slider = figure.sliders.find((item) => item.id === id);
     return slider ? slider.value : 0;
+  }
+
+  function shouldShowHiddenParametricSurface() {
+    const figure = getCurrentFigure();
+    const slider = figure.sliders.find((item) => item.id === "show_backfaces");
+    return slider ? Boolean(slider.value) : true;
   }
 
   function getLightDirection() {
@@ -1374,7 +1521,7 @@
       [3, 0, 4], [3, 4, 7]
     ];
 
-    return { vertices, faces };
+    return orientMeshFacesOutward({ vertices, faces });
   }
 
   function createOctahedronMesh() {
@@ -1439,7 +1586,7 @@
       }
     }
 
-    return { vertices, faces };
+    return orientMeshFacesOutward({ vertices, faces });
   }
 
   function createMobiusStripMesh() {
