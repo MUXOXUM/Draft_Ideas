@@ -12,7 +12,7 @@ window.PROJECTS = [
     "path": "3d_ascii_console/index.html",
     "readmePath": "3d_ascii_console/README.md",
     "createdAt": "2026-03-27",
-    "updatedAt": "2026-03-27",
+    "updatedAt": "2026-03-30",
     "topic": "sim"
   },
   {
@@ -32,11 +32,11 @@ window.PROJECTS = [
     "topic": "art"
   },
   {
-    "title": "Lorentz Attractor",
-    "path": "lorentz_attractor/index.html",
-    "readmePath": "lorentz_attractor/README.md",
+    "title": "Strange Attractors",
+    "path": "strange_attractors/index.html",
+    "readmePath": "strange_attractors/README.md",
     "createdAt": "2026-03-25",
-    "updatedAt": "2026-03-25",
+    "updatedAt": "2026-03-30",
     "topic": "art"
   },
   {
