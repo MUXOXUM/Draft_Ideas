@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lorentz Attractor</title>
+  <title>Chaotic Attractors</title>
   <style>
     :root {
       --bg: #101010;
+      --label: rgba(245, 245, 245, 0.92);
+      --hint: rgba(190, 190, 190, 0.72);
     }
 
     * {
@@ -25,6 +27,7 @@
     body {
       display: grid;
       place-items: center;
+      font-family: "Segoe UI", Arial, sans-serif;
     }
 
     canvas {
@@ -33,23 +36,181 @@
       display: block;
       background: var(--bg);
     }
+
+    body.camera-mode canvas {
+      cursor: grab;
+    }
+
+    body.camera-mode.is-dragging canvas {
+      cursor: grabbing;
+    }
+
+    .attractor-label {
+      position: fixed;
+      left: 24px;
+      bottom: 22px;
+      z-index: 1;
+      pointer-events: none;
+      color: var(--label);
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .attractor-label__title {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .attractor-label__hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--hint);
+    }
+
+    .camera-mode-panel {
+      position: fixed;
+      top: 22px;
+      left: 24px;
+      z-index: 1;
+      display: none;
+      max-width: min(320px, calc(100vw - 48px));
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(10, 10, 10, 0.72);
+      color: rgba(245, 245, 245, 0.92);
+      font-size: 12px;
+      line-height: 1.45;
+      letter-spacing: 0.03em;
+      backdrop-filter: blur(10px);
+    }
+
+    .camera-mode-panel.is-visible {
+      display: block;
+    }
+
+    .camera-mode-panel p {
+      margin: 0;
+    }
+
+    .camera-mode-panel p + p {
+      margin-top: 6px;
+      color: var(--hint);
+    }
   </style>
 </head>
 <body>
   <canvas aria-hidden="true"></canvas>
+  <div class="attractor-label" aria-live="polite">
+    <p class="attractor-label__title">Аттрактор Лоренца</p>
+    <p class="attractor-label__hint">← → или A / D</p>
+  </div>
+  <div class="camera-mode-panel" aria-hidden="true">
+    <p class="camera-mode-panel__title">CAMERA MODE</p>
+    <p class="camera-mode-panel__controls">Drag: arcball, Enter: log, C: off</p>
+    <p class="camera-mode-panel__values"></p>
+  </div>
   <script>
     const canvas = document.querySelector("canvas");
     const ctx = canvas.getContext("2d");
+    const labelTitle = document.querySelector(".attractor-label__title");
+    const labelHint = document.querySelector(".attractor-label__hint");
+    const cameraModePanel = document.querySelector(".camera-mode-panel");
+    const cameraModeValues = document.querySelector(".camera-mode-panel__values");
 
     const PARTICLE_COUNT = 1400;
-    const SIGMA = 10;
-    const RHO = 28;
-    const BETA = 8 / 3;
-    const DT = 0.0025;
     const SUBSTEPS = 4;
     const BASE_SCALE = 15.5;
     const TRAIL_FADE = 0.16;
-    const ESCAPE_RADIUS = 180;
+
+    const attractors = [
+      {
+        name: "Аттрактор Лоренца",
+        dt: 0.0025,
+        escapeRadius: 180,
+        camera: {
+          spin: -0.134,
+          tilt: -0.297
+        },
+        createParticle() {
+          const distanceBias = Math.random() ** 0.55;
+          const radius = 24 + distanceBias * 66;
+          const theta = randomRange(0, Math.PI * 2);
+          const phi = Math.acos(randomRange(-1, 1));
+
+          return {
+            x: radius * Math.sin(phi) * Math.cos(theta),
+            y: radius * Math.sin(phi) * Math.sin(theta),
+            z: radius * Math.cos(phi) + randomRange(-18, 18),
+            alpha: randomRange(0.18, 0.95),
+            size: randomRange(0.7, 2.2)
+          };
+        },
+        derivative(x, y, z) {
+          const sigma = 10;
+          const rho = 28;
+          const beta = 8 / 3;
+
+          return {
+            dx: sigma * (y - x),
+            dy: x * (rho - z) - y,
+            dz: x * y - beta * z
+          };
+        },
+        referencePoints: [
+          { x: -18, y: -22, z: 10 },
+          { x: -18, y: 22, z: 10 },
+          { x: 18, y: -22, z: 10 },
+          { x: 18, y: 22, z: 10 },
+          { x: 0, y: 0, z: 40 },
+          { x: 0, y: 0, z: -2 },
+          { x: -10, y: 0, z: 20 },
+          { x: 10, y: 0, z: 20 }
+        ]
+      },
+      {
+        name: "Аттрактор Рёсслера",
+        dt: 0.01,
+        escapeRadius: 120,
+        camera: {
+          spin: 3.102,
+          tilt: -0.756
+        },
+        createParticle() {
+          const angle = randomRange(0, Math.PI * 2);
+          const radius = randomRange(2, 18);
+
+          return {
+            x: Math.cos(angle) * radius + randomRange(-3, 3),
+            y: Math.sin(angle) * radius + randomRange(-3, 3),
+            z: randomRange(0, 24),
+            alpha: randomRange(0.18, 0.95),
+            size: randomRange(0.7, 2.2)
+          };
+        },
+        derivative(x, y, z) {
+          const a = 0.2;
+          const b = 0.2;
+          const c = 5.7;
+
+          return {
+            dx: -y - z,
+            dy: x + a * y,
+            dz: b + z * (x - c)
+          };
+        },
+        referencePoints: [
+          { x: -14, y: -18, z: 0 },
+          { x: -14, y: 18, z: 0 },
+          { x: 14, y: -18, z: 0 },
+          { x: 14, y: 18, z: 0 },
+          { x: 0, y: 0, z: 28 },
+          { x: 8, y: 0, z: 12 },
+          { x: -8, y: 0, z: 12 }
+        ]
+      }
+    ];
 
     let width = 0;
     let height = 0;
@@ -60,8 +221,302 @@
     let time = 0;
     let attractorOffsetX = 0;
     let attractorOffsetY = 0;
+    let currentAttractorIndex = 0;
 
     const particles = [];
+    const cameraModeState = {
+      enabled: false,
+      matrixOverride: null,
+      pointerId: null,
+      dragging: false,
+      startVector: null,
+      startMatrix: null
+    };
+
+    function getCurrentAttractor() {
+      return attractors[currentAttractorIndex];
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function syncCameraModePanel() {
+      document.body.classList.toggle("camera-mode", cameraModeState.enabled);
+      document.body.classList.toggle("is-dragging", cameraModeState.dragging);
+
+      if (!cameraModeState.enabled) {
+        cameraModePanel.classList.remove("is-visible");
+        cameraModePanel.setAttribute("aria-hidden", "true");
+        labelHint.textContent = "← → или A / D";
+        return;
+      }
+
+      const { name } = getCurrentAttractor();
+      const activeCamera = getActiveCamera();
+
+      cameraModePanel.classList.add("is-visible");
+      cameraModePanel.setAttribute("aria-hidden", "false");
+      cameraModeValues.textContent = `${name}: spin ${activeCamera.spin.toFixed(3)}, tilt ${activeCamera.tilt.toFixed(3)}`;
+      labelHint.textContent = "← → или A / D, C: режим камеры";
+    }
+
+    function setCameraModeEnabled(enabled) {
+      cameraModeState.enabled = enabled;
+
+      if (!enabled) {
+        stopCameraDrag();
+      }
+
+      syncCameraModePanel();
+    }
+
+    function resetCameraModeOffsets() {
+      cameraModeState.matrixOverride = null;
+      syncCameraModePanel();
+    }
+
+    function getCameraMatrix(camera) {
+      if (camera.matrix) {
+        return camera.matrix.map((row) => row.slice());
+      }
+
+      return buildCameraMatrix(camera.spin, camera.tilt);
+    }
+
+    function formatMatrixValue(value) {
+      return Number(value.toFixed(6));
+    }
+
+    function formatMatrixForLog(matrix) {
+      return [
+        "matrix: [",
+        `  [${formatMatrixValue(matrix[0][0])}, ${formatMatrixValue(matrix[0][1])}, ${formatMatrixValue(matrix[0][2])}],`,
+        `  [${formatMatrixValue(matrix[1][0])}, ${formatMatrixValue(matrix[1][1])}, ${formatMatrixValue(matrix[1][2])}],`,
+        `  [${formatMatrixValue(matrix[2][0])}, ${formatMatrixValue(matrix[2][1])}, ${formatMatrixValue(matrix[2][2])}]`,
+        "]"
+      ].join("\n");
+    }
+
+    function getActiveCamera() {
+      const { camera } = getCurrentAttractor();
+      const matrix = cameraModeState.matrixOverride || getCameraMatrix(camera);
+      const angles = extractCameraFromMatrix(matrix);
+
+      return {
+        matrix,
+        spin: angles.spin,
+        tilt: angles.tilt
+      };
+    }
+
+    function logActiveCamera() {
+      const { camera, name } = getCurrentAttractor();
+      const activeCamera = getActiveCamera();
+      const baseCamera = extractCameraFromMatrix(getCameraMatrix(camera));
+      console.log(
+        `[camera-mode] ${name}\n` +
+        `camera: {\n` +
+        `${formatMatrixForLog(activeCamera.matrix).split("\n").map((line) => `  ${line}`).join("\n")}\n` +
+        `}\n` +
+        `derived spin: ${activeCamera.spin.toFixed(3)}, derived tilt: ${activeCamera.tilt.toFixed(3)}\n` +
+        `base spin: ${baseCamera.spin.toFixed(3)}, base tilt: ${baseCamera.tilt.toFixed(3)}`
+      );
+    }
+
+    function buildCameraMatrix(spin, tilt) {
+      const cosSpin = Math.cos(spin);
+      const sinSpin = Math.sin(spin);
+      const cosTilt = Math.cos(tilt);
+      const sinTilt = Math.sin(tilt);
+
+      return [
+        [cosSpin, 0, -sinSpin],
+        [-sinTilt * sinSpin, cosTilt, -sinTilt * cosSpin],
+        [cosTilt * sinSpin, sinTilt, cosTilt * cosSpin]
+      ];
+    }
+
+    function multiplyMatrix3(a, b) {
+      return [
+        [
+          a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0],
+          a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1],
+          a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2]
+        ],
+        [
+          a[1][0] * b[0][0] + a[1][1] * b[1][0] + a[1][2] * b[2][0],
+          a[1][0] * b[0][1] + a[1][1] * b[1][1] + a[1][2] * b[2][1],
+          a[1][0] * b[0][2] + a[1][1] * b[1][2] + a[1][2] * b[2][2]
+        ],
+        [
+          a[2][0] * b[0][0] + a[2][1] * b[1][0] + a[2][2] * b[2][0],
+          a[2][0] * b[0][1] + a[2][1] * b[1][1] + a[2][2] * b[2][1],
+          a[2][0] * b[0][2] + a[2][1] * b[1][2] + a[2][2] * b[2][2]
+        ]
+      ];
+    }
+
+    function orthonormalizeMatrix3(matrix) {
+      const xAxis = normalizeVector3({
+        x: matrix[0][0],
+        y: matrix[0][1],
+        z: matrix[0][2]
+      });
+      const ySeed = {
+        x: matrix[1][0],
+        y: matrix[1][1],
+        z: matrix[1][2]
+      };
+      const zAxis = normalizeVector3(crossVector3(xAxis, ySeed));
+      const yAxis = normalizeVector3(crossVector3(zAxis, xAxis));
+
+      return [
+        [xAxis.x, xAxis.y, xAxis.z],
+        [yAxis.x, yAxis.y, yAxis.z],
+        [zAxis.x, zAxis.y, zAxis.z]
+      ];
+    }
+
+    function normalizeVector3(vector) {
+      const length = Math.hypot(vector.x, vector.y, vector.z) || 1;
+      return {
+        x: vector.x / length,
+        y: vector.y / length,
+        z: vector.z / length
+      };
+    }
+
+    function crossVector3(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+
+    function dotVector3(a, b) {
+      return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    function buildAxisAngleMatrix(axis, angle) {
+      const normalizedAxis = normalizeVector3(axis);
+      const { x, y, z } = normalizedAxis;
+      const cosAngle = Math.cos(angle);
+      const sinAngle = Math.sin(angle);
+      const t = 1 - cosAngle;
+
+      return [
+        [
+          t * x * x + cosAngle,
+          t * x * y - sinAngle * z,
+          t * x * z + sinAngle * y
+        ],
+        [
+          t * x * y + sinAngle * z,
+          t * y * y + cosAngle,
+          t * y * z - sinAngle * x
+        ],
+        [
+          t * x * z - sinAngle * y,
+          t * y * z + sinAngle * x,
+          t * z * z + cosAngle
+        ]
+      ];
+    }
+
+    function buildArcballRotation(fromVector, toVector) {
+      const dot = clamp(dotVector3(fromVector, toVector), -1, 1);
+      const axis = crossVector3(fromVector, toVector);
+      const axisLength = Math.hypot(axis.x, axis.y, axis.z);
+
+      if (axisLength < 1e-6) {
+        if (dot > 0.9999) {
+          return buildAxisAngleMatrix({ x: 0, y: 1, z: 0 }, 0);
+        }
+
+        const fallbackAxis = Math.abs(fromVector.x) < 0.9
+          ? crossVector3(fromVector, { x: 1, y: 0, z: 0 })
+          : crossVector3(fromVector, { x: 0, y: 1, z: 0 });
+
+        return buildAxisAngleMatrix(fallbackAxis, Math.PI);
+      }
+
+      return buildAxisAngleMatrix(axis, Math.acos(dot));
+    }
+
+    function extractCameraFromMatrix(matrix) {
+      return {
+        spin: Math.atan2(-matrix[0][2], matrix[0][0]),
+        tilt: Math.asin(clamp(matrix[2][1], -1, 1))
+      };
+    }
+
+    function projectPointerToArcball(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const radius = Math.min(rect.width, rect.height) * 0.5;
+      const localX = (clientX - rect.left - rect.width * 0.5) / radius;
+      const localY = (rect.height * 0.5 - (clientY - rect.top)) / radius;
+      const lengthSquared = localX * localX + localY * localY;
+
+      if (lengthSquared <= 1) {
+        return {
+          x: localX,
+          y: localY,
+          z: Math.sqrt(1 - lengthSquared)
+        };
+      }
+
+      const normalizedXY = normalizeVector3({ x: localX, y: localY, z: 0 });
+      return {
+        x: normalizedXY.x,
+        y: normalizedXY.y,
+        z: 0
+      };
+    }
+
+    function startCameraDrag(event) {
+      if (!cameraModeState.enabled) {
+        return;
+      }
+
+      event.preventDefault();
+      const activeCamera = getActiveCamera();
+      cameraModeState.pointerId = event.pointerId;
+      cameraModeState.dragging = true;
+      cameraModeState.startVector = projectPointerToArcball(event.clientX, event.clientY);
+      cameraModeState.startMatrix = activeCamera.matrix.map((row) => row.slice());
+      canvas.setPointerCapture(event.pointerId);
+      syncCameraModePanel();
+    }
+
+    function updateCameraDrag(event) {
+      if (!cameraModeState.enabled || !cameraModeState.dragging || event.pointerId !== cameraModeState.pointerId) {
+        return;
+      }
+
+      const currentVector = projectPointerToArcball(event.clientX, event.clientY);
+      const deltaRotation = buildArcballRotation(cameraModeState.startVector, currentVector);
+      const nextMatrix = orthonormalizeMatrix3(multiplyMatrix3(deltaRotation, cameraModeState.startMatrix));
+      cameraModeState.matrixOverride = nextMatrix;
+      syncCameraModePanel();
+    }
+
+    function stopCameraDrag() {
+      if (cameraModeState.pointerId !== null) {
+        try {
+          canvas.releasePointerCapture(cameraModeState.pointerId);
+        } catch (error) {
+          // Ignore release errors when capture was already cleared.
+        }
+      }
+
+      cameraModeState.pointerId = null;
+      cameraModeState.dragging = false;
+      cameraModeState.startVector = null;
+      cameraModeState.startMatrix = null;
+      syncCameraModePanel();
+    }
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -80,18 +535,7 @@
     }
 
     function createParticle() {
-      const distanceBias = Math.random() ** 0.55;
-      const radius = 24 + distanceBias * 66;
-      const theta = randomRange(0, Math.PI * 2);
-      const phi = Math.acos(randomRange(-1, 1));
-
-      return {
-        x: radius * Math.sin(phi) * Math.cos(theta),
-        y: radius * Math.sin(phi) * Math.sin(theta),
-        z: radius * Math.cos(phi) + randomRange(-18, 18),
-        alpha: randomRange(0.18, 0.95),
-        size: randomRange(0.7, 2.2)
-      };
+      return getCurrentAttractor().createParticle();
     }
 
     function resetParticle(particle) {
@@ -110,60 +554,45 @@
       }
     }
 
-    function buildReferencePoint(x, y, z) {
-      return { x, y, z, alpha: 1, size: 1 };
-    }
-
-    function lorenzDerivative(x, y, z) {
-      return {
-        dx: SIGMA * (y - x),
-        dy: x * (RHO - z) - y,
-        dz: x * y - BETA * z
-      };
-    }
-
-    function stepLorenz(point) {
-      const k1 = lorenzDerivative(point.x, point.y, point.z);
-      const k2 = lorenzDerivative(
-        point.x + k1.dx * DT * 0.5,
-        point.y + k1.dy * DT * 0.5,
-        point.z + k1.dz * DT * 0.5
+    function stepAttractor(point) {
+      const { derivative, dt } = getCurrentAttractor();
+      const k1 = derivative(point.x, point.y, point.z);
+      const k2 = derivative(
+        point.x + k1.dx * dt * 0.5,
+        point.y + k1.dy * dt * 0.5,
+        point.z + k1.dz * dt * 0.5
       );
-      const k3 = lorenzDerivative(
-        point.x + k2.dx * DT * 0.5,
-        point.y + k2.dy * DT * 0.5,
-        point.z + k2.dz * DT * 0.5
+      const k3 = derivative(
+        point.x + k2.dx * dt * 0.5,
+        point.y + k2.dy * dt * 0.5,
+        point.z + k2.dz * dt * 0.5
       );
-      const k4 = lorenzDerivative(
-        point.x + k3.dx * DT,
-        point.y + k3.dy * DT,
-        point.z + k3.dz * DT
+      const k4 = derivative(
+        point.x + k3.dx * dt,
+        point.y + k3.dy * dt,
+        point.z + k3.dz * dt
       );
 
-      point.x += DT * (k1.dx + 2 * k2.dx + 2 * k3.dx + k4.dx) / 6;
-      point.y += DT * (k1.dy + 2 * k2.dy + 2 * k3.dy + k4.dy) / 6;
-      point.z += DT * (k1.dz + 2 * k2.dz + 2 * k3.dz + k4.dz) / 6;
+      point.x += dt * (k1.dx + 2 * k2.dx + 2 * k3.dx + k4.dx) / 6;
+      point.y += dt * (k1.dy + 2 * k2.dy + 2 * k3.dy + k4.dy) / 6;
+      point.z += dt * (k1.dz + 2 * k2.dz + 2 * k3.dz + k4.dz) / 6;
     }
 
     function isParticleValid(point) {
+      const { escapeRadius } = getCurrentAttractor();
+
       return Number.isFinite(point.x)
         && Number.isFinite(point.y)
         && Number.isFinite(point.z)
-        && Math.abs(point.x) < ESCAPE_RADIUS
-        && Math.abs(point.y) < ESCAPE_RADIUS
-        && Math.abs(point.z) < ESCAPE_RADIUS;
+        && Math.abs(point.x) < escapeRadius
+        && Math.abs(point.y) < escapeRadius
+        && Math.abs(point.z) < escapeRadius;
     }
 
-    function project(point, spin, tilt) {
-      const cosSpin = Math.cos(spin);
-      const sinSpin = Math.sin(spin);
-      const cosTilt = Math.cos(tilt);
-      const sinTilt = Math.sin(tilt);
-
-      const x1 = point.x * cosSpin - point.z * sinSpin;
-      const z1 = point.x * sinSpin + point.z * cosSpin;
-      const y1 = point.y * cosTilt - z1 * sinTilt;
-      const z2 = point.y * sinTilt + z1 * cosTilt;
+    function project(point, cameraMatrix) {
+      const x1 = point.x * cameraMatrix[0][0] + point.y * cameraMatrix[0][1] + point.z * cameraMatrix[0][2];
+      const y1 = point.x * cameraMatrix[1][0] + point.y * cameraMatrix[1][1] + point.z * cameraMatrix[1][2];
+      const z2 = point.x * cameraMatrix[2][0] + point.y * cameraMatrix[2][1] + point.z * cameraMatrix[2][2];
 
       const depth = Math.max(0.18, 210 / (210 + z2 * 2.2));
 
@@ -174,17 +603,8 @@
       };
     }
 
-    function updateAttractorOffset(spin, tilt) {
-      const referencePoints = [
-        buildReferencePoint(-18, -22, 10),
-        buildReferencePoint(-18, 22, 10),
-        buildReferencePoint(18, -22, 10),
-        buildReferencePoint(18, 22, 10),
-        buildReferencePoint(0, 0, 40),
-        buildReferencePoint(0, 0, -2),
-        buildReferencePoint(-10, 0, 20),
-        buildReferencePoint(10, 0, 20)
-      ];
+    function updateAttractorOffset(cameraMatrix) {
+      const { referencePoints } = getCurrentAttractor();
 
       let minX = Infinity;
       let maxX = -Infinity;
@@ -192,7 +612,7 @@
       let maxY = -Infinity;
 
       for (let i = 0; i < referencePoints.length; i += 1) {
-        const projected = project(referencePoints[i], spin, tilt);
+        const projected = project(referencePoints[i], cameraMatrix);
         minX = Math.min(minX, projected.x);
         maxX = Math.max(maxX, projected.x);
         minY = Math.min(minY, projected.y);
@@ -203,10 +623,24 @@
       attractorOffsetY = centerY - (minY + maxY) / 2;
     }
 
+    function drawLabel() {
+      labelTitle.textContent = getCurrentAttractor().name;
+      syncCameraModePanel();
+    }
+
+    function switchAttractor(direction) {
+      currentAttractorIndex = (currentAttractorIndex + direction + attractors.length) % attractors.length;
+      resetCameraModeOffsets();
+      seedParticles();
+      drawLabel();
+      ctx.fillStyle = "#101010";
+      ctx.fillRect(0, 0, width, height);
+    }
+
     function render() {
-      const spin = 0;
-      const tilt = -0.42;
-      updateAttractorOffset(spin, tilt);
+      const activeCamera = getActiveCamera();
+      const cameraMatrix = activeCamera.matrix;
+      updateAttractorOffset(cameraMatrix);
 
       ctx.fillStyle = `rgba(16, 16, 16, ${TRAIL_FADE})`;
       ctx.fillRect(0, 0, width, height);
@@ -217,7 +651,7 @@
         const particle = particles[i];
 
         for (let step = 0; step < SUBSTEPS; step += 1) {
-          stepLorenz(particle);
+          stepAttractor(particle);
         }
 
         if (!isParticleValid(particle)) {
@@ -225,7 +659,7 @@
         }
 
         projected.push({
-          ...project(particle, spin, tilt),
+          ...project(particle, cameraMatrix),
           alpha: particle.alpha,
           size: particle.size
         });
@@ -255,9 +689,34 @@
 
     resize();
     seedParticles();
+    drawLabel();
     ctx.fillStyle = "#101010";
     ctx.fillRect(0, 0, width, height);
     window.addEventListener("resize", resize);
+    canvas.addEventListener("pointerdown", startCameraDrag);
+    canvas.addEventListener("pointermove", updateCameraDrag);
+    canvas.addEventListener("pointerup", stopCameraDrag);
+    canvas.addEventListener("pointercancel", stopCameraDrag);
+    canvas.addEventListener("pointerleave", (event) => {
+      if (!cameraModeState.dragging || event.pointerId !== cameraModeState.pointerId) {
+        return;
+      }
+
+      stopCameraDrag();
+    });
+    window.addEventListener("keydown", (event) => {
+      const key = event.key.toLowerCase();
+
+      if (key === "c") {
+        setCameraModeEnabled(!cameraModeState.enabled);
+      } else if (event.key === "ArrowLeft" || key === "a") {
+        switchAttractor(-1);
+      } else if (event.key === "ArrowRight" || key === "d") {
+        switchAttractor(1);
+      } else if (cameraModeState.enabled && event.key === "Enter") {
+        logActiveCamera();
+      }
+    });
     requestAnimationFrame(render);
   </script>
 </body>
