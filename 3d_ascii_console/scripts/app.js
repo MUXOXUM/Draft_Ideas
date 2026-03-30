@@ -29,15 +29,26 @@
 
   const figures = [
     {
+      id: "sphere",
+      label: "SPHERE",
+      sliders: [
+        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 2.4 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.25 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.9 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.2 }
+      ]
+    },
+    {
       id: "torus",
       label: "TORUS",
       sliders: [
-        { id: "size", label: "size", min: 0.7, max: 2.2, step: 0.1, value: 1.6 },
+        { id: "size", label: "size", min: 0.5, max: 2.5, step: 0.1, value: 1.6 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
@@ -45,12 +56,11 @@
       id: "cube",
       label: "CUBE",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.75 },
+        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 1.75 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
@@ -58,52 +68,48 @@
       id: "octahedron",
       label: "OCTAHEDRON",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 4.0, step: 0.1, value: 3.2 },
+        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 3.2 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.15 }
       ]
     },
-    {
-      id: "sphere",
-      label: "SPHERE",
+        {
+      id: "icosahedron",
+      label: "ICOSAHEDRON",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.7 },
-        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.25 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.9 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
-        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.2 }
-      ]
-    },
-    {
-      id: "mobius_strip",
-      label: "MOBIUS STRIP",
-      sliders: [
-        { id: "size", label: "size", min: 0.8, max: 2.4, step: 0.1, value: 1.5 },
-        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.35 },
-        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.8 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
-        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.18 }
+        { id: "size", label: "size", min: 0.5, max: 5.0, step: 0.1, value: 1.9 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.14 }
       ]
     },
     {
       id: "star_polyhedron",
       label: "STAR POLY",
       sliders: [
-        { id: "size", label: "size", min: 0.8, max: 3.0, step: 0.1, value: 1.8 },
+        { id: "size", label: "size", min: 0.5, max: 3.0, step: 0.1, value: 1.8 },
         { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.3 },
         { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 1.0 },
-        { id: "light_yaw", label: "l_yaw", min: -180, max: 180, step: 5, value: 35 },
-        { id: "light_pitch", label: "l_pit", min: -80, max: 80, step: 5, value: 45 },
-        { id: "light_roll", label: "l_roll", min: -180, max: 180, step: 5, value: 0 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
         { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.12 }
+      ]
+    },
+    {
+      id: "mobius_strip",
+      label: "MOBIUS STRIP",
+      sliders: [
+        { id: "size", label: "size", min: 0.5, max: 4.0, step: 0.1, value: 1.5 },
+        { id: "speed", label: "speed", min: 0.0, max: 2.0, step: 0.1, value: 0.35 },
+        { id: "resolution", label: "res", min: 0.2, max: 1.0, step: 0.1, value: 0.8 },
+        { id: "light_yaw", label: "l_yaw", min: 0, max: 360, step: 5, value: 40 },
+        { id: "light_pitch", label: "l_pit", min: -90, max: 90, step: 5, value: 40 },
+        { id: "ambient", label: "amb", min: 0.0, max: 0.8, step: 0.05, value: 0.18 }
       ]
     }
   ];
@@ -113,7 +119,8 @@
     octahedron: createOctahedronMesh(),
     sphere: createSphereMesh(),
     mobius_strip: createMobiusStripMesh(),
-    star_polyhedron: createStarPolyhedronMesh()
+    star_polyhedron: createStarPolyhedronMesh(),
+    icosahedron: createIcosahedronMesh()
   };
 
   const state = {
@@ -272,37 +279,6 @@
     });
 
     lines.push("+----+-------------------------------+");
-
-    lines.push("");
-    lines.push("+----------------+-------------------+");
-    lines.push("| Menu key       | Action            |");
-    lines.push("+----------------+-------------------+");
-    lines.push("| UP / DOWN      | choose figure     |");
-    lines.push("| ENTER          | render            |");
-    lines.push("| ESC            | return to shell   |");
-    lines.push("+----------------+-------------------+");
-    lines.push("");
-    lines.push("+----------------+-------------------+");
-    lines.push("| Figure input   | Action            |");
-    lines.push("+----------------+-------------------+");
-    lines.push("| LMB drag       | arcball rotate    |");
-    lines.push("| RMB or MMB     | pan               |");
-    lines.push("| Wheel          | zoom              |");
-    lines.push("| Double LMB     | reset view        |");
-    lines.push("| M              | open settings     |");
-    lines.push("| ESC            | close or go back  |");
-    lines.push("+----------------+-------------------+");
-    lines.push("");
-    lines.push("+----------------+-----------------------------------+");
-    lines.push("| Light param    | Effect                            |");
-    lines.push("+----------------+-----------------------------------+");
-    lines.push("| l_yaw          | moves light left / right around   |");
-    lines.push("|                | the figure horizontally           |");
-    lines.push("| l_pit          | moves light higher / lower above  |");
-    lines.push("|                | or below the figure               |");
-    lines.push("| l_roll         | rotates light around its forward  |");
-    lines.push("|                | axis, changing side tilt          |");
-    lines.push("+----------------+-----------------------------------+");
     return lines.join("\n");
   }
 
@@ -653,6 +629,11 @@
     }
 
     if (command === "render3d") {
+      if (hasHelpFlag(args)) {
+        getRender3dHelpLines().forEach((line) => state.shellLines.push(line));
+        trimShellBuffer();
+        return;
+      }
       state.mode = "menu";
       state.menuIndex = 0;
       persistUiState();
@@ -687,9 +668,14 @@
   }
 
   function handleColorCommand(args) {
+    if (hasHelpFlag(args)) {
+      getColorHelpLines().forEach((line) => state.shellLines.push(line));
+      return;
+    }
+
     if (args.length < 1 || args.length > 2) {
       state.shellLines.push("usage: color <text> [background]");
-      state.shellLines.push("colors: green blue gray white black yellow red or #RRGGBB");
+      state.shellLines.push("tip: color -h");
       return;
     }
 
@@ -698,7 +684,7 @@
 
     if (!textColor || (args.length === 2 && !backgroundColor)) {
       state.shellLines.push("invalid color value");
-      state.shellLines.push("colors: green blue gray white black yellow red or #RRGGBB");
+      state.shellLines.push("tip: color -h");
       return;
     }
 
@@ -716,6 +702,27 @@
         ? `text color changed to ${textColor}`
         : `text/background changed to ${textColor} ${finalBackground}`
     );
+  }
+
+  function hasHelpFlag(args) {
+    return args.includes("-h");
+  }
+
+  function normalizeSliderValue(id, value) {
+    if (id === "light_yaw") {
+      return normalizeAngle360(value);
+    }
+
+    if (id === "light_pitch") {
+      return clamp(-90, 90, value);
+    }
+
+    return value;
+  }
+
+  function normalizeAngle360(value) {
+    const normalized = value % 360;
+    return normalized < 0 ? normalized + 360 : normalized;
   }
 
   function parseColorArgument(value) {
@@ -807,16 +814,71 @@
 
   function getHelpLines() {
     return [
-      "+----------+--------------------------------------+",
-      "| Command  | Description                          |",
-      "+----------+--------------------------------------+",
-      "| help     | show this help                       |",
-      "| render3d | open figure selection                |",
-      "| sysinfo  | show browser system info             |",
-      "| clear    | clear terminal text                  |",
-      "| color    | change text/background colors        |",
-      "| reboot   | clear saved browser data             |",
-      "+----------+--------------------------------------+",
+      "+----------+-------+--------------------------------------+",
+      "| Command  | Flags | Description                          |",
+      "+----------+-------+--------------------------------------+",
+      "| help     |       | show this help                       |",
+      "| render3d | -h    | open figure selection                |",
+      "| sysinfo  |       | show browser system info             |",
+      "| clear    |       | clear terminal text                  |",
+      "| color    | -h    | change text/background colors        |",
+      "| reboot   |       | clear saved browser data             |",
+      "+----------+-------+--------------------------------------+",
+    ];
+  }
+
+  function getRender3dHelpLines() {
+    return [
+      "",
+      "usage: render3d",
+      "",
+      "opens the figure selection screen.",
+      "",
+      "+----------------+-------------------+",
+      "| Menu key       | Action            |",
+      "+----------------+-------------------+",
+      "| UP / DOWN      | choose figure     |",
+      "| ENTER          | render            |",
+      "| ESC            | return to shell   |",
+      "+----------------+-------------------+",
+      "",
+      "+----------------+-------------------+",
+      "| Figure input   | Action            |",
+      "+----------------+-------------------+",
+      "| LMB drag       | arcball rotate    |",
+      "| RMB or MMB     | pan               |",
+      "| Wheel          | zoom              |",
+      "| Double LMB     | reset view        |",
+      "| M              | open settings     |",
+      "| ESC            | close or go back  |",
+      "+----------------+-------------------+",
+      "",
+      "+----------------+-----------------------------------+",
+      "| Light param    | Effect                            |",
+      "+----------------+-----------------------------------+",
+      "| l_yaw          | rotates light 0..360 around the   |",
+      "|                | figure on the horizontal plane    |",
+      "| l_pit          | tilts light from -90 to 90        |",
+      "|                | degrees, bottom to top            |",
+      "+----------------+-----------------------------------+",
+      ""
+    ];
+  }
+
+  function getColorHelpLines() {
+    return [
+      "",
+      "usage: color <text> [background]",
+      "",
+      "changes terminal text color and optional background color.",
+      "supported values:",
+      "- green blue gray white black yellow red",
+      "- #RRGGBB or #RGB",
+      "",
+      "examples:",
+      "- color green",
+      "- color #00ff00 #000000",
+      ""
     ];
   }
 
@@ -959,7 +1021,7 @@
           return;
         }
 
-        slider.value = clamp(slider.min, slider.max, savedValue);
+        slider.value = clamp(slider.min, slider.max, normalizeSliderValue(slider.id, savedValue));
       });
     });
   }
@@ -1269,14 +1331,14 @@
   }
 
   function getLightDirection() {
-    const yaw = (getSliderValue("light_yaw") * Math.PI) / 180;
-    const pitch = (getSliderValue("light_pitch") * Math.PI) / 180;
-    const roll = (getSliderValue("light_roll") * Math.PI) / 180;
-    const yawQuat = quatFromAxisAngle([0, 1, 0], yaw);
-    const pitchQuat = quatFromAxisAngle([1, 0, 0], pitch);
-    const rollQuat = quatFromAxisAngle([0, 0, 1], roll);
-    const lightQuat = quatNormalize(quatMultiply(rollQuat, quatMultiply(pitchQuat, yawQuat)));
-    return normalizeVec3(quatRotateVec3(lightQuat, [0, 0, -1]));
+    const yaw = (normalizeAngle360(getSliderValue("light_yaw")) * Math.PI) / 180;
+    const pitch = (clamp(-90, 90, getSliderValue("light_pitch")) * Math.PI) / 180;
+    const cosPitch = Math.cos(pitch);
+    return normalizeVec3([
+      -Math.sin(yaw) * cosPitch,
+      -Math.sin(pitch),
+      Math.cos(yaw) * cosPitch
+    ]);
   }
 
   function getAmbientLight() {
@@ -1450,17 +1512,46 @@
     return orientMeshFacesOutward({ vertices, faces });
   }
 
+  function createIcosahedronMesh() {
+    const phi = (1 + Math.sqrt(5)) * 0.5;
+    const vertices = [
+      [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+      [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+      [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+    ].map(normalizeVec3);
+
+    const faces = [
+      [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+      [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+      [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+      [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+    ];
+
+    return orientMeshFacesOutward({ vertices, faces });
+  }
+
   function orientMeshFacesOutward(mesh) {
+    const reference = getMeshCentroid(mesh.vertices);
     const faces = mesh.faces.map((face) => {
       const a = mesh.vertices[face[0]];
       const b = mesh.vertices[face[1]];
       const c = mesh.vertices[face[2]];
       const normal = crossVec3(subVec3(b, a), subVec3(c, a));
       const center = scaleVec3(addVec3(addVec3(a, b), c), 1 / 3);
-      return dotVec3(normal, center) >= 0 ? face : [face[0], face[2], face[1]];
+      const direction = subVec3(center, reference);
+      return dotVec3(normal, direction) >= 0 ? face : [face[0], face[2], face[1]];
     });
 
     return { ...mesh, faces };
+  }
+
+  function getMeshCentroid(vertices) {
+    if (vertices.length === 0) {
+      return [0, 0, 0];
+    }
+
+    const sum = vertices.reduce((acc, vertex) => addVec3(acc, vertex), [0, 0, 0]);
+    return scaleVec3(sum, 1 / vertices.length);
   }
 
   function edgeFunction(a, b, c) {
