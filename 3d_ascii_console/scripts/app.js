@@ -5,6 +5,8 @@
   const AUTO_RESUME_MS = 0;
   const DEFAULT_PROMPT = "root@host ~> ";
   const CARET_BLINK_MS = 530;
+  const UI_INSET_TOP = 1;
+  const UI_INSET_LEFT = 2;
   const STORAGE_KEYS = {
     console: "ascii_os_console_settings",
     figures: "ascii_os_figure_settings",
@@ -200,10 +202,14 @@
     state.measureSpan.style.font = style.font;
     const charRect = state.measureSpan.getBoundingClientRect();
     const rect = terminal.getBoundingClientRect();
+    const paddingX = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    const paddingY = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
     const charWidth = Math.max(1, charRect.width);
     const charHeight = Math.max(1, charRect.height);
-    state.viewportCols = Math.max(52, Math.floor(rect.width / charWidth));
-    state.viewportRows = Math.max(26, Math.floor(rect.height / charHeight));
+    const contentWidth = Math.max(0, rect.width - paddingX);
+    const contentHeight = Math.max(0, rect.height - paddingY);
+    state.viewportCols = Math.max(52, Math.floor(contentWidth / charWidth));
+    state.viewportRows = Math.max(26, Math.floor(contentHeight / charHeight));
     renderScreen();
   }
 
@@ -261,7 +267,7 @@
     const lines = [];
     lines.push(...state.shellLines);
     lines.push(`${state.prompt}${state.commandInput}${caretVisible ? "_" : " "}`);
-    return lines.join("\n");
+    return insetTextLines(lines).join("\n");
   }
 
   function renderMenuView() {
@@ -282,7 +288,22 @@
     });
 
     lines.push("+----+-------------------------------+");
-    return lines.join("\n");
+    return insetTextLines(lines).join("\n");
+  }
+
+  function insetTextLines(lines, topInset = UI_INSET_TOP, leftInset = UI_INSET_LEFT) {
+    const insetLines = [];
+    const leftPadding = " ".repeat(Math.max(0, leftInset));
+
+    for (let i = 0; i < topInset; i += 1) {
+      insetLines.push("");
+    }
+
+    lines.forEach((line) => {
+      insetLines.push(`${leftPadding}${line}`);
+    });
+
+    return insetLines;
   }
 
   function renderRenderView() {
@@ -567,8 +588,10 @@
   function projectPoint(point) {
     const depth = point[2] + state.zoom;
     const scale = Math.min(state.renderCols, state.renderRows) * 0.72;
-    const x = state.renderCols / 2 + ((point[0] + state.panX) * scale) / (depth * CHAR_ASPECT);
-    const y = state.renderRows / 2 - ((point[1] + state.panY) * scale) / depth;
+    const centerX = (state.renderCols - 1) / 2;
+    const centerY = (state.renderRows - 1) / 2;
+    const x = centerX + ((point[0] + state.panX) * scale) / (depth * CHAR_ASPECT);
+    const y = centerY - ((point[1] + state.panY) * scale) / depth;
     return { x, y, depth };
   }
 

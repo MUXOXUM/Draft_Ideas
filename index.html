@@ -550,11 +550,7 @@
         const list = document.createElement("ol");
         list.className = "topic-list";
 
-        const sortedProjects = [...topicProjects].sort((a, b) =>
-          new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0)
-        );
-
-        for (const project of sortedProjects) {
+        for (const project of topicProjects) {
           const item = document.createElement("li");
           item.className = "project-item";
 

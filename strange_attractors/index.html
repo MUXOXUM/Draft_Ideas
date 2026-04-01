@@ -359,8 +359,6 @@
 
       cameraModePanel.classList.add("is-visible");
       cameraModePanel.setAttribute("aria-hidden", "false");
-      cameraModeValues.textContent =
-        `${name}: offset ${activeView.offsetX.toFixed(0)} ${activeView.offsetY.toFixed(0)}, size ${activeView.scale.toFixed(2)}x`;
       labelHint.textContent = "← → or A / D, C: camera mode";
     }
 
@@ -455,16 +453,14 @@
       const activeView = getActiveView();
       const baseView = getViewPreset(view);
       console.log(
-        `[camera-mode] ${name}\n` +
         `camera: {\n` +
         `${formatMatrixForLog(activeCamera.matrix).split("\n").map((line) => `  ${line}`).join("\n")}\n` +
-        `}\n` +
+        `},\n` +
         `view: {\n` +
         `  offsetX: ${Number(activeView.offsetX.toFixed(2))},\n` +
         `  offsetY: ${Number(activeView.offsetY.toFixed(2))},\n` +
         `  scale: ${Number(activeView.scale.toFixed(3))}\n` +
-        `}\n` +
-        `base offsetX: ${baseView.offsetX.toFixed(2)}, base offsetY: ${baseView.offsetY.toFixed(2)}, base scale: ${baseView.scale.toFixed(3)}`
+        `},`
       );
     }
 
