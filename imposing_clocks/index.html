@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imposing Clocks</title>
+    <style>
+        :root {
+            --bg-top: #111214;
+            --bg-bottom: #646368;
+            --panel: rgba(20, 20, 22, 0.9);
+            --panel-strong: rgba(15, 15, 17, 0.96);
+            --border: rgba(255, 255, 255, 0.14);
+            --text: #f4f2ec;
+            --muted: rgba(244, 242, 236, 0.68);
+            --label: rgba(245, 245, 245, 0.92);
+            --hint: rgba(190, 190, 190, 0.72);
+            --accent: #76757a;
+            --accent-hover: #8b8a90;
+            --shadow: rgba(0, 0, 0, 0.4);
+            --clock-diameter: 650px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: "Segoe UI", Arial, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 28%),
+                linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        .stage {
+            width: 100%;
+            min-height: calc(100vh - 48px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .clock-view {
+            width: min(860px, 100%);
+            padding: 36px;
+        }
+
+        .clock-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .clock-container {
+            width: 100%;
+            max-width: var(--clock-diameter);
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .clock-svg {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: drop-shadow(0 18px 32px var(--shadow));
+        }
+
+        .metal-ring {
+            stroke: #d3d2cf;
+            stroke-width: 8;
+            fill: none;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.08));
+        }
+
+        .day-section {
+            fill: #eeeeea;
+            stroke: #c8c7c4;
+            stroke-width: 1;
+        }
+
+        .night-section {
+            fill: #1a1d33;
+            stroke: #35374b;
+            stroke-width: 1;
+        }
+
+        .hour-hand {
+            stroke: #202020;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+
+        .minute-hand {
+            stroke: #555555;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .second-hand {
+            stroke: #d94b4b;
+            stroke-width: 2;
+            stroke-linecap: round;
+        }
+
+        .hour-hand-night {
+            stroke: #f5f5f5;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+
+        .minute-hand-night {
+            stroke: #e5e5e5;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+
+        .center-circle {
+            fill: #8b8b8b;
+            stroke: #f5f5f5;
+            stroke-width: 2;
+        }
+
+        .marker {
+            stroke: #6f6f6f;
+            stroke-width: 2;
+        }
+
+        .marker-number,
+        .marker-number-night {
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .marker-number {
+            fill: #444444;
+        }
+
+        .marker-night {
+            stroke: #dfdfdf;
+            stroke-width: 2;
+        }
+
+        .marker-number-night {
+            fill: #f3f3f3;
+        }
+
+        .screen-time {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 5;
+            margin: 0;
+            color: var(--label);
+            font: 300 clamp(1.2rem, 2.6vw, 1.85rem) / 1 "Segoe UI", Arial, sans-serif;
+            letter-spacing: 0.04em;
+            text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+        }
+
+        .clock-caption {
+            position: fixed;
+            left: 24px;
+            bottom: 24px;
+            z-index: 5;
+            padding: 0;
+            max-width: min(420px, calc(100vw - 48px));
+            pointer-events: none;
+            color: var(--label);
+            text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .clock-caption-title {
+            margin: 0 0 6px;
+            font-size: 1rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .clock-caption-hint {
+            margin: 6px 0 0;
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            color: var(--hint);
+        }
+
+        .rotary-clock {
+            position: relative;
+            width: min(84vw, var(--clock-diameter));
+            aspect-ratio: 1;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+        }
+
+        .rotary-clock-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .rotary-pointer {
+            position: absolute;
+            top: 4%;
+            left: 50%;
+            width: 0;
+            height: 46%;
+            transform: translateX(-50%);
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        .rotary-pointer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 100%;
+            border-left: 3px solid rgba(245, 245, 245, 0.94);
+        }
+
+        .rotary-pointer::after {
+            content: none;
+        }
+
+        .rotary-track {
+            fill: none;
+            stroke: rgba(245, 245, 245, 0.2);
+            stroke-width: 1;
+        }
+
+        .rotary-track--minutes,
+        .rotary-track--seconds {
+            stroke: rgba(245, 245, 245, 0.12);
+        }
+
+        .rotary-text {
+            fill: rgba(245, 245, 245, 0.94);
+            font-family: "Segoe UI", Arial, sans-serif;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            user-select: none;
+        }
+
+        .rotary-text--hours {
+            letter-spacing: 0.08em;
+        }
+
+        .rotary-text--minutes,
+        .rotary-text--seconds {
+            letter-spacing: 0.04em;
+            fill: rgba(245, 245, 245, 0.74);
+        }
+
+        .rotary-center-dot {
+            fill: rgba(245, 245, 245, 0.92);
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 16px;
+            }
+
+            .stage {
+                min-height: calc(100vh - 32px);
+            }
+
+            .clock-view {
+                padding: 24px 18px 140px;
+                border-radius: 28px;
+            }
+
+            .clock-caption {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                max-width: none;
+            }
+
+            .screen-time {
+                right: 16px;
+                bottom: 16px;
+            }
+
+            .rotary-clock {
+                width: min(92vw, var(--clock-diameter));
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="stage">
+        <section class="clock-view" id="clock-view-root" aria-live="polite"></section>
+    </main>
+
+    <aside class="clock-caption" aria-live="polite">
+        <h2 class="clock-caption-title" id="clock-title">24 Hour Clock</h2>
+        <p class="clock-caption-hint">← → or A / D</p>
+    </aside>
+    <p class="screen-time" id="screen-time" aria-live="polite">--:--:--</p>
+    <script>
+        const CLOCK_DIAMETER = 400;
+        const CLOCK_CENTER = CLOCK_DIAMETER / 2;
+        const CLOCK_GEOMETRY = {
+            size: CLOCK_DIAMETER,
+            center: CLOCK_CENTER,
+            outerRadius: 190,
+            dayNightRadius: 185,
+            markerInnerRadius: 170,
+            markerOuterRadius: 180,
+            markerLabelRadius: 140,
+            hourHandLength: 110,
+            minuteHandLength: 140,
+            secondHandLength: 160,
+            centerDotRadius: 8,
+            rotaryTrackHours: 190,
+            rotaryTrackMinutes: 136,
+            rotaryTrackSeconds: 85,
+            rotaryLabelHours: 175,
+            rotaryLabelMinutes: 125,
+            rotaryLabelSeconds: 78,
+            rotaryFontHours: 14,
+            rotaryFontMinutes: 10,
+            rotaryFontSeconds: 6,
+            rotaryCenterDotRadius: 4
+        };
+
+        const SunCalculator = (() => {
+            async function getSunTimes(lat, lon) {
+                try {
+                    const response = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`);
+                    const data = await response.json();
+
+                    if (data.status === "OK") {
+                        return {
+                            sunrise: new Date(data.results.sunrise),
+                            sunset: new Date(data.results.sunset)
+                        };
+                    }
+
+                    throw new Error("Не удалось получить данные о восходе и закате.");
+                } catch (error) {
+                    console.error("Ошибка получения солнечных данных:", error);
+
+                    const now = new Date();
+                    const sunrise = new Date(now);
+                    const sunset = new Date(now);
+                    sunrise.setHours(6, 0, 0, 0);
+                    sunset.setHours(18, 0, 0, 0);
+
+                    return { sunrise, sunset };
+                }
+            }
+
+            return { getSunTimes };
+        })();
+
+        const TwentyFourHourClockView = (() => {
+            let sunriseTime = null;
+            let sunsetTime = null;
+            let currentLocation = { lat: 55.7558, lon: 37.6173 };
+            let tickTimer = null;
+
+            function render() {
+                return `
+                    <div class="clock-wrapper">
+                        <div class="clock-container">
+                            <svg class="clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" id="clock-svg">
+                                <defs>
+                                    <clipPath id="night-clip" clipPathUnits="userSpaceOnUse">
+                                        <path
+                                            id="night-clip-path"
+                                            d="M ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center} L ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.dayNightRadius} A ${CLOCK_GEOMETRY.dayNightRadius} ${CLOCK_GEOMETRY.dayNightRadius} 0 1 1 ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.dayNightRadius} Z"
+                                        ></path>
+                                    </clipPath>
+                                </defs>
+
+                                <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.outerRadius}" class="metal-ring"></circle>
+                                <g id="hour-markers"></g>
+                                <g id="hour-markers-night" clip-path="url(#night-clip)"></g>
+                                <g id="hands">
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.hourHandLength}" class="hour-hand" id="hour-hand"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.minuteHandLength}" class="minute-hand" id="minute-hand"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.secondHandLength}" class="second-hand" id="second-hand"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.hourHandLength}" class="hour-hand-night" id="hour-hand-night" clip-path="url(#night-clip)"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.minuteHandLength}" class="minute-hand-night" id="minute-hand-night" clip-path="url(#night-clip)"></line>
+                                    <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.centerDotRadius}" class="center-circle"></circle>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function mount(root) {
+                root.innerHTML = render();
+
+                createHourMarkers();
+                updateClock();
+                tickTimer = window.setInterval(updateClock, 1000);
+
+                SunCalculator.getSunTimes(currentLocation.lat, currentLocation.lon).then((times) => {
+                    sunriseTime = times.sunrise;
+                    sunsetTime = times.sunset;
+                    updateDayNightSections();
+                });
+            }
+
+            function unmount() {
+                if (tickTimer) {
+                    window.clearInterval(tickTimer);
+                    tickTimer = null;
+                }
+            }
+
+            function createHourMarkers() {
+                const markers = document.getElementById("hour-markers");
+                const markersNight = document.getElementById("hour-markers-night");
+                markers.innerHTML = "";
+                markersNight.innerHTML = "";
+
+                for (let hour = 0; hour < 24; hour += 1) {
+                    const angle = (hour * 15 - 90) * Math.PI / 180;
+                    const x1 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerInnerRadius * Math.cos(angle);
+                    const y1 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerInnerRadius * Math.sin(angle);
+                    const x2 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerOuterRadius * Math.cos(angle);
+                    const y2 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerOuterRadius * Math.sin(angle);
+                    const textX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerLabelRadius * Math.cos(angle);
+                    const textY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.markerLabelRadius * Math.sin(angle);
+
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", x1);
+                    line.setAttribute("y1", y1);
+                    line.setAttribute("x2", x2);
+                    line.setAttribute("y2", y2);
+                    line.setAttribute("class", "marker");
+                    markers.appendChild(line);
+
+                    const lineNight = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    lineNight.setAttribute("x1", x1);
+                    lineNight.setAttribute("y1", y1);
+                    lineNight.setAttribute("x2", x2);
+                    lineNight.setAttribute("y2", y2);
+                    lineNight.setAttribute("class", "marker-night");
+                    markersNight.appendChild(lineNight);
+
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", textX);
+                    text.setAttribute("y", textY);
+                    text.setAttribute("class", "marker-number");
+                    text.textContent = hour.toString().padStart(2, "0");
+                    markers.appendChild(text);
+
+                    const textNight = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    textNight.setAttribute("x", textX);
+                    textNight.setAttribute("y", textY);
+                    textNight.setAttribute("class", "marker-number-night");
+                    textNight.textContent = hour.toString().padStart(2, "0");
+                    markersNight.appendChild(textNight);
+                }
+            }
+
+            function updateDayNightSections() {
+                if (!sunriseTime || !sunsetTime) {
+                    return;
+                }
+
+                const svg = document.getElementById("clock-svg");
+                const existingSections = document.querySelectorAll(".day-section, .night-section");
+                existingSections.forEach((element) => element.remove());
+
+                const now = new Date();
+                const sunrise = new Date(sunriseTime);
+                const sunset = new Date(sunsetTime);
+                sunrise.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+                sunset.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+
+                const getTimeAngle = (date) => {
+                    const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+                    return (hours * 15 - 90) * Math.PI / 180;
+                };
+
+                const sunriseAngle = getTimeAngle(sunrise);
+                const sunsetAngle = getTimeAngle(sunset);
+
+                const createArc = (startAngle, endAngle, className) => {
+                    const startX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.dayNightRadius * Math.cos(startAngle);
+                    const startY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.dayNightRadius * Math.sin(startAngle);
+                    const endX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.dayNightRadius * Math.cos(endAngle);
+                    const endY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.dayNightRadius * Math.sin(endAngle);
+                    const largeArc = (endAngle - startAngle) % (2 * Math.PI) > Math.PI ? 1 : 0;
+
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", [
+                        "M", CLOCK_GEOMETRY.center, CLOCK_GEOMETRY.center,
+                        "L", startX, startY,
+                        "A", CLOCK_GEOMETRY.dayNightRadius, CLOCK_GEOMETRY.dayNightRadius, 0, largeArc, 1, endX, endY,
+                        "Z"
+                    ].join(" "));
+                    path.setAttribute("class", className);
+                    return path;
+                };
+
+                const daySection = createArc(sunriseAngle, sunsetAngle, "day-section");
+                const nightSection = createArc(sunsetAngle, sunriseAngle + 2 * Math.PI, "night-section");
+
+                svg.insertBefore(daySection, document.getElementById("hour-markers"));
+                svg.insertBefore(nightSection, document.getElementById("hour-markers"));
+                document.getElementById("night-clip-path").setAttribute("d", nightSection.getAttribute("d"));
+            }
+
+            function updateHands() {
+                const now = new Date();
+                const hours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+                const minutes = now.getMinutes() + now.getSeconds() / 60;
+                const seconds = now.getSeconds();
+
+                const hourAngle = (hours * 15 - 90) * Math.PI / 180;
+                const minuteAngle = (minutes * 6 - 90) * Math.PI / 180;
+                const secondAngle = (seconds * 6 - 90) * Math.PI / 180;
+
+                const hourX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.hourHandLength * Math.cos(hourAngle);
+                const hourY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.hourHandLength * Math.sin(hourAngle);
+                const minuteX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.minuteHandLength * Math.cos(minuteAngle);
+                const minuteY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.minuteHandLength * Math.sin(minuteAngle);
+                const secondX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.secondHandLength * Math.cos(secondAngle);
+                const secondY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.secondHandLength * Math.sin(secondAngle);
+
+                document.getElementById("hour-hand").setAttribute("x2", hourX);
+                document.getElementById("hour-hand").setAttribute("y2", hourY);
+                document.getElementById("hour-hand-night").setAttribute("x2", hourX);
+                document.getElementById("hour-hand-night").setAttribute("y2", hourY);
+                document.getElementById("minute-hand").setAttribute("x2", minuteX);
+                document.getElementById("minute-hand").setAttribute("y2", minuteY);
+                document.getElementById("minute-hand-night").setAttribute("x2", minuteX);
+                document.getElementById("minute-hand-night").setAttribute("y2", minuteY);
+                document.getElementById("second-hand").setAttribute("x2", secondX);
+                document.getElementById("second-hand").setAttribute("y2", secondY);
+            }
+
+            function updateDigitalTime() {
+                document.getElementById("screen-time").textContent = new Date().toLocaleTimeString("ru-RU");
+            }
+
+            function updateClock() {
+                updateHands();
+                updateDigitalTime();
+            }
+
+            return { mount, unmount };
+        })();
+
+        const RotaryDialClockView = (() => {
+            let frameId = null;
+            let hoursRing = null;
+            let minutesRing = null;
+            let secondsRing = null;
+            const svgNamespace = "http://www.w3.org/2000/svg";
+
+            function render() {
+                return `
+                    <div class="clock-wrapper">
+                        <div class="rotary-clock">
+                            <div class="rotary-pointer"></div>
+                            <svg class="rotary-clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" aria-hidden="true">
+                                <circle class="rotary-track rotary-track--hours" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackHours}"></circle>
+                                <circle class="rotary-track rotary-track--minutes" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackMinutes}"></circle>
+                                <circle class="rotary-track rotary-track--seconds" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackSeconds}"></circle>
+                                <g id="rotary-hours-ring"></g>
+                                <g id="rotary-minutes-ring"></g>
+                                <g id="rotary-seconds-ring"></g>
+                                <circle class="rotary-center-dot" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryCenterDotRadius}"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function buildRing(ring, total, radius, fontSize, className, formatter) {
+                ring.innerHTML = "";
+                ring.setAttribute("transform", `rotate(0 ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+
+                for (let value = 0; value < total; value += 1) {
+                    const angleDegrees = (value / total) * 360 - 90;
+                    const angle = angleDegrees * Math.PI / 180;
+                    const x = CLOCK_GEOMETRY.center + radius * Math.cos(angle);
+                    const y = CLOCK_GEOMETRY.center + radius * Math.sin(angle);
+                    const label = document.createElementNS(svgNamespace, "text");
+                    label.setAttribute("x", x);
+                    label.setAttribute("y", y);
+                    label.setAttribute("class", className);
+                    label.style.fontSize = `${fontSize}px`;
+                    label.setAttribute("transform", `rotate(${angleDegrees} ${x} ${y})`);
+                    label.textContent = formatter(value);
+                    ring.appendChild(label);
+                }
+            }
+
+            function update() {
+                const now = new Date();
+                const milliseconds = now.getMilliseconds();
+                const seconds = now.getSeconds() + milliseconds / 1000;
+                const minutes = now.getMinutes() + seconds / 60;
+                const hours = (now.getHours() % 24) + minutes / 60;
+
+                hoursRing.setAttribute("transform", `rotate(${-hours * 15} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                minutesRing.setAttribute("transform", `rotate(${-minutes * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                secondsRing.setAttribute("transform", `rotate(${-seconds * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                document.getElementById("screen-time").textContent = now.toLocaleTimeString("ru-RU");
+
+                frameId = window.requestAnimationFrame(update);
+            }
+
+            function mount(root) {
+                root.innerHTML = render();
+
+                hoursRing = document.getElementById("rotary-hours-ring");
+                minutesRing = document.getElementById("rotary-minutes-ring");
+                secondsRing = document.getElementById("rotary-seconds-ring");
+
+                buildRing(hoursRing, 24, CLOCK_GEOMETRY.rotaryLabelHours, CLOCK_GEOMETRY.rotaryFontHours, "rotary-text rotary-text--hours", (value) => value.toString().padStart(2, "0"));
+                buildRing(minutesRing, 60, CLOCK_GEOMETRY.rotaryLabelMinutes, CLOCK_GEOMETRY.rotaryFontMinutes, "rotary-text rotary-text--minutes", (value) => value.toString().padStart(2, "0"));
+                buildRing(secondsRing, 60, CLOCK_GEOMETRY.rotaryLabelSeconds, CLOCK_GEOMETRY.rotaryFontSeconds, "rotary-text rotary-text--seconds", (value) => value.toString().padStart(2, "0"));
+
+                update();
+            }
+
+            function unmount() {
+                if (frameId) {
+                    window.cancelAnimationFrame(frameId);
+                    frameId = null;
+                }
+            }
+
+            return { mount, unmount };
+        })();
+
+        const clockViews = [
+            {
+                title: "24 Hour Clock",
+                mount: TwentyFourHourClockView.mount,
+                unmount: TwentyFourHourClockView.unmount
+            },
+            {
+                title: "Rotary Dial Clock",
+                mount: RotaryDialClockView.mount,
+                unmount: RotaryDialClockView.unmount
+            }
+        ];
+
+        const ClockGallery = (() => {
+            let currentIndex = 0;
+            let activeClock = null;
+
+            function mountCurrentClock() {
+                const root = document.getElementById("clock-view-root");
+                const title = document.getElementById("clock-title");
+
+                if (activeClock && typeof activeClock.unmount === "function") {
+                    activeClock.unmount();
+                }
+
+                activeClock = clockViews[currentIndex];
+                title.textContent = activeClock.title;
+                activeClock.mount(root);
+            }
+
+            function showClock(nextIndex) {
+                const total = clockViews.length;
+                currentIndex = (nextIndex + total) % total;
+                mountCurrentClock();
+            }
+
+            function handleKeydown(event) {
+                if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                    return;
+                }
+
+                if (event.key === "ArrowRight" || event.key === "d" || event.key === "D" || event.key === "в" || event.key === "В") {
+                    event.preventDefault();
+                    showClock(currentIndex + 1);
+                }
+
+                if (event.key === "ArrowLeft" || event.key === "a" || event.key === "A" || event.key === "ф" || event.key === "Ф") {
+                    event.preventDefault();
+                    showClock(currentIndex - 1);
+                }
+            }
+
+            function init() {
+                mountCurrentClock();
+                window.addEventListener("keydown", handleKeydown);
+            }
+
+            return { init };
+        })();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            ClockGallery.init();
+        });
+    </script>
+</body>
+</html>

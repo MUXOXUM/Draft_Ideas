@@ -1,20 +1,4 @@
-window.PROJECTS = [
-  {
-    "title": "24 Hour Clock",
-    "path": "24_hour_clock/index.html",
-    "readmePath": "24_hour_clock/README.md",
-    "createdAt": "2026-03-10",
-    "updatedAt": "2026-03-22",
-    "topic": "-"
-  },
-  {
-    "title": "3D ASCII Console",
-    "path": "3d_ascii_console/index.html",
-    "readmePath": "3d_ascii_console/README.md",
-    "createdAt": "2026-03-27",
-    "updatedAt": "2026-03-30",
-    "topic": "sim"
-  },
+[
   {
     "title": "Butterfly Effect",
     "path": "butterfly_effect/index.html",
@@ -54,5 +38,13 @@ window.PROJECTS = [
     "createdAt": "2026-03-25",
     "updatedAt": "2026-03-25",
     "topic": "-"
+  },
+  {
+    "title": "Imposing Clocks",
+    "path": "imposing_clocks/index.html",
+    "readmePath": "imposing_clocks/README.md",
+    "createdAt": "2026-04-01",
+    "updatedAt": "2026-04-01",
+    "topic": "-"
   }
-];
+]
