@@ -48,4 +48,6 @@ __pycache__/
 *.part
 *.cache
 
+# Файлы агентов
 .codex
+.agents
