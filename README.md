@@ -2,4 +2,7 @@
 
 Небольшой сборник моих веб-экспериментов, визуализаций и интерактивных мини-проектов на HTML, CSS и JS. В корне репозитория находится главная страница-каталог, которая собирает ссылки на все подпроекты с собственными `index.html`.
 
-https://muxoxum.github.io/Collection_of_ideas/
+Правила для структуры и оформления будущих проектов: [PROJECT_GUIDELINES.md](PROJECT_GUIDELINES.md)
+
+[Сайтик] (https://muxoxum.github.io/Collection_of_ideas/)
+
