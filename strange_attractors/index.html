@@ -350,7 +350,7 @@
       if (!cameraModeState.enabled) {
         cameraModePanel.classList.remove("is-visible");
         cameraModePanel.setAttribute("aria-hidden", "true");
-        labelHint.textContent = "← → or A / D";
+        labelHint.textContent = "← → or A/D";
         return;
       }
 
@@ -360,7 +360,7 @@
 
       cameraModePanel.classList.add("is-visible");
       cameraModePanel.setAttribute("aria-hidden", "false");
-      labelHint.textContent = "← → or A / D, C: camera mode";
+      labelHint.textContent = "← → or A/D | C: camera mode";
     }
 
     function setCameraModeEnabled(enabled) {

@@ -6,6 +6,17 @@
     <meta name="color-scheme" content="dark">
     <meta name="theme-color" content="#111214">
     <link rel="icon" href="../favicon.ico" type="image/x-icon">
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
     <title>Imposing Clocks</title>
     <style>
         :root {
@@ -85,50 +96,35 @@
         }
 
         .metal-ring {
-            stroke: rgba(245, 245, 245, 0.2);
-            stroke-width: 1;
+            stroke: none;
             fill: none;
         }
 
         .day-section {
             fill: rgba(245, 245, 245, 0.08);
-            stroke: rgba(245, 245, 245, 0.08);
-            stroke-width: 1;
+            stroke: none;
         }
 
         .night-section {
             fill: rgba(8, 10, 18, 0.28);
-            stroke: rgba(245, 245, 245, 0.08);
-            stroke-width: 1;
+            stroke: none;
         }
 
         .hour-hand {
             stroke: rgba(245, 245, 245, 0.94);
-            stroke-width: 3;
-            stroke-linecap: round;
-        }
-
-        .minute-hand {
-            stroke: rgba(245, 245, 245, 0.78);
-            stroke-width: 2;
+            stroke-width: 1.6;
             stroke-linecap: round;
         }
 
         .second-hand {
             stroke: rgba(245, 245, 245, 0.42);
-            stroke-width: 1.5;
+            stroke-width: 1.4;
             stroke-linecap: round;
         }
 
         .hour-hand-night {
             stroke: rgba(245, 245, 245, 0.94);
-            stroke-width: 3;
-            stroke-linecap: round;
-        }
-
-        .minute-hand-night {
-            stroke: rgba(245, 245, 245, 0.78);
-            stroke-width: 2;
+            stroke-width: 1.6;
             stroke-linecap: round;
         }
 
@@ -139,7 +135,8 @@
 
         .marker {
             stroke: rgba(245, 245, 245, 0.2);
-            stroke-width: 1;
+            stroke-width: 1.8;
+            stroke-linecap: butt;
         }
 
         .marker-number,
@@ -156,7 +153,71 @@
 
         .marker-night {
             stroke: rgba(245, 245, 245, 0.12);
-            stroke-width: 1;
+            stroke-width: 1.8;
+            stroke-linecap: butt;
+        }
+
+        .marker-minute {
+            stroke: rgba(245, 245, 245, 0.18);
+            stroke-linecap: butt;
+            stroke-width: 0.8;
+        }
+
+        .marker-minute--five {
+            stroke-width: 1.2;
+        }
+
+        .marker-minute--quarter {
+            stroke-width: 1.4;
+        }
+
+        .marker-minute-night {
+            stroke: rgba(245, 245, 245, 0.1);
+            stroke-linecap: butt;
+            stroke-width: 0.8;
+        }
+
+        .marker-minute-night.marker-minute--five {
+            stroke-width: 1.2;
+        }
+
+        .marker-minute-night.marker-minute--quarter {
+            stroke-width: 1.4;
+        }
+
+        .seconds-subdial {
+            fill: rgba(255, 255, 255, 0.02);
+            stroke: rgba(245, 245, 245, 0.12);
+            stroke-width: 0.8;
+        }
+
+        .seconds-subdial-tick {
+            stroke: rgba(245, 245, 245, 0.34);
+            stroke-width: 0.9;
+            stroke-linecap: round;
+        }
+
+        .seconds-subdial-tick--major {
+            stroke: rgba(245, 245, 245, 0.58);
+            stroke-width: 1.5;
+        }
+
+        .seconds-subdial-label {
+            fill: rgba(245, 245, 245, 0.72);
+            font-size: 8px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            font-family: "Segoe UI", Arial, sans-serif;
+        }
+
+        .seconds-subdial-hand {
+            stroke: rgba(245, 245, 245, 0.46);
+            stroke-width: 1.5;
+            stroke-linecap: round;
+        }
+
+        .seconds-subdial-center {
+            fill: rgba(245, 245, 245, 0.9);
         }
 
         .marker-number-night {
@@ -185,6 +246,130 @@
             margin: 6px 0 0;
             font-size: 12px;
             letter-spacing: 0.04em;
+            color: var(--hint);
+        }
+
+        .map-overlay[hidden] {
+            display: none;
+        }
+
+        .map-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 6;
+            display: grid;
+            place-items: center;
+            padding: 28px;
+            background: transparent;
+            backdrop-filter: none;
+        }
+
+        .map-panel {
+            width: min(760px, 100%);
+            padding: 18px 18px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            background: rgba(16, 18, 24, 0.96);
+            box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+        }
+
+        .map-panel-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .map-panel-title {
+            margin: 0;
+            font-size: 0.98rem;
+            letter-spacing: 0.04em;
+            color: var(--label);
+        }
+
+        .map-panel-copy {
+            margin: 6px 0 0;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+
+        .map-close-button {
+            border: 0;
+            border-radius: 999px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .map-close-button:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .map-surface {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: transparent;
+        }
+
+        .map-surface .leaflet-container {
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: transparent;
+        }
+
+        .map-surface .leaflet-control-zoom a {
+            background: rgba(18, 20, 26, 0.92);
+            color: var(--text);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .map-surface .leaflet-control-zoom {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+        }
+
+        .map-surface .leaflet-control-attribution {
+            background: rgba(15, 17, 22, 0.76);
+            color: rgba(244, 242, 236, 0.7);
+            font-size: 10px;
+        }
+
+        .map-surface .leaflet-control-attribution a {
+            color: rgba(244, 242, 236, 0.84);
+        }
+
+        .map-surface--fallback {
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .map-marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: #f5f5f5;
+            border: 2px solid rgba(8, 10, 18, 0.6);
+            box-shadow: 0 0 0 5px rgba(245, 245, 245, 0.18);
+        }
+
+        .map-coordinates {
+            margin: 12px 2px 0;
+            font-size: 12px;
+            letter-spacing: 0.03em;
             color: var(--hint);
         }
 
@@ -240,6 +425,26 @@
             stroke: rgba(245, 245, 245, 0.12);
         }
 
+        .rotary-tick {
+            stroke: rgba(245, 245, 245, 0.82);
+            stroke-linecap: round;
+        }
+
+        .rotary-tick--hours {
+            stroke-width: 1.8;
+        }
+
+        .rotary-tick--minutes,
+        .rotary-tick--seconds {
+            stroke: rgba(245, 245, 245, 0.62);
+            stroke-width: 1.3;
+        }
+
+        .rotary-tick--minor {
+            stroke: rgba(245, 245, 245, 0.32);
+            stroke-width: 0.9;
+        }
+
         .rotary-text {
             fill: rgba(245, 245, 245, 0.94);
             font-family: "Segoe UI", Arial, sans-serif;
@@ -283,6 +488,15 @@
                 max-width: none;
             }
 
+            .map-overlay {
+                padding: 14px;
+            }
+
+            .map-panel {
+                padding: 14px;
+                border-radius: 20px;
+            }
+
             .rotary-clock {
                 width: min(92vw, var(--clock-diameter));
             }
@@ -302,7 +516,8 @@
         const CLOCK_DIAMETER = 400;
         const CLOCK_CENTER = CLOCK_DIAMETER / 2;
         const MOBILE_HINT = "Tap the left and right edges of the screen to switch";
-        const DESKTOP_HINT = "← → or A / D";
+        const DESKTOP_HINT = "← → or A/D";
+        const MAP_SHORTCUT_HINT = "M: select map point";
         const CLOCK_GEOMETRY = {
             size: CLOCK_DIAMETER,
             center: CLOCK_CENTER,
@@ -317,35 +532,67 @@
             centerDotRadius: 8,
             classicOuterRadius: 199,
             classicDayNightRadius: 198,
-            classicMarkerInnerRadius: 179,
-            classicMarkerOuterRadius: 191,
-            classicMarkerLabelRadius: 152,
-            classicHourHandLength: 118,
-            classicMinuteHandLength: 150,
-            classicSecondHandLength: 172,
+            classicMarkerInnerRadius: 180,
+            classicMarkerOuterRadius: 195,
+            classicMarkerLabelRadius: 170,
+            classicMinuteMarkerOuterRadius: 195,
+            classicMinuteMarkerFiveInnerRadius: 184,
+            classicMinuteMarkerQuarterInnerRadius: 182,
+            classicHourHandLength: 180,
+            classicSecondsSubdialCenterY: 286,
+            classicSecondsSubdialRadius: 44,
+            classicSecondsSubdialMinorInnerRadius: 37,
+            classicSecondsSubdialMajorInnerRadius: 31,
+            classicSecondsSubdialOuterRadius: 42,
+            classicSecondsSubdialLabelRadius: 24,
+            classicSecondsHandLength: 34,
             classicCenterDotRadius: 4,
             rotaryTrackHours: 190,
             rotaryTrackMinutes: 136,
             rotaryTrackSeconds: 85,
-            rotaryLabelHours: 175,
-            rotaryLabelMinutes: 125,
-            rotaryLabelSeconds: 78,
-            rotaryFontHours: 14,
-            rotaryFontMinutes: 10,
-            rotaryFontSeconds: 6,
+            rotaryTickOuterHours: 186,
+            rotaryTickInnerHours: 178,
+            rotaryMinorTickOuterMinutes: 132,
+            rotaryMinorTickInnerMinutes: 129,
+            rotaryTickOuterMinutes: 132,
+            rotaryTickInnerMinutes: 126,
+            rotaryMinorTickOuterSeconds: 82,
+            rotaryMinorTickInnerSeconds: 79,
+            rotaryTickOuterSeconds: 82,
+            rotaryTickInnerSeconds: 77,
+            rotaryLabelHours: 163,
+            rotaryLabelMinutes: 112,
+            rotaryLabelSeconds: 65,
+            rotaryFontHours: 18,
+            rotaryFontMinutes: 16,
+            rotaryFontSeconds: 14,
             rotaryCenterDotRadius: 4
         };
 
         const SunCalculator = (() => {
-            async function getSunTimes(lat, lon) {
+            async function getSunTimes(lat, lon, date, timeZone) {
                 try {
-                    const response = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0`);
+                    const url = new URL("https://api.sunrise-sunset.org/json");
+                    url.searchParams.set("lat", lat);
+                    url.searchParams.set("lng", lon);
+                    url.searchParams.set("formatted", "0");
+
+                    if (date) {
+                        url.searchParams.set("date", date);
+                    }
+
+                    if (timeZone) {
+                        url.searchParams.set("tzid", timeZone);
+                    }
+
+                    const response = await fetch(url);
                     const data = await response.json();
 
                     if (data.status === "OK") {
                         return {
                             sunrise: new Date(data.results.sunrise),
-                            sunset: new Date(data.results.sunset)
+                            sunset: new Date(data.results.sunset),
+                            timeZone: data.tzid || timeZone || "UTC"
                         };
                     }
 
@@ -359,209 +606,593 @@
                     sunrise.setHours(6, 0, 0, 0);
                     sunset.setHours(18, 0, 0, 0);
 
-                    return { sunrise, sunset };
+                    return { sunrise, sunset, timeZone: timeZone || "UTC" };
                 }
             }
 
             return { getSunTimes };
         })();
 
-        const TwentyFourHourClockView = (() => {
-            let sunriseTime = null;
-            let sunsetTime = null;
-            let currentLocation = { lat: 55.7558, lon: 37.6173 };
-            let tickTimer = null;
+        const TimeZoneResolver = (() => {
+            async function getTimeZone(lat, lon) {
+                try {
+                    const url = new URL("https://api.open-meteo.com/v1/forecast");
+                    url.searchParams.set("latitude", lat);
+                    url.searchParams.set("longitude", lon);
+                    url.searchParams.set("timezone", "auto");
+                    url.searchParams.set("forecast_days", "1");
+
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (data.timezone) {
+                        return data.timezone;
+                    }
+
+                    throw new Error("Не удалось определить часовой пояс.");
+                } catch (error) {
+                    console.error("Ошибка получения часового пояса:", error);
+                    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+                }
+            }
+
+            return { getTimeZone };
+        })();
+
+        const SVG_NS = "http://www.w3.org/2000/svg";
+
+        function createSvgElement(tagName, attributes = {}) {
+            const element = document.createElementNS(SVG_NS, tagName);
+
+            Object.entries(attributes).forEach(([name, value]) => {
+                element.setAttribute(name, value);
+            });
+
+            return element;
+        }
+
+        function polarToCartesian(radius, angle, centerX = CLOCK_GEOMETRY.center, centerY = CLOCK_GEOMETRY.center) {
+            return {
+                x: centerX + radius * Math.cos(angle),
+                y: centerY + radius * Math.sin(angle)
+            };
+        }
+
+        function createLineByAngle(innerRadius, outerRadius, angle, attributes = {}, centerX, centerY) {
+            const start = polarToCartesian(innerRadius, angle, centerX, centerY);
+            const end = polarToCartesian(outerRadius, angle, centerX, centerY);
+
+            return createSvgElement("line", {
+                x1: start.x,
+                y1: start.y,
+                x2: end.x,
+                y2: end.y,
+                ...attributes
+            });
+        }
+
+        function createTextByAngle(radius, angle, textContent, attributes = {}, centerX, centerY) {
+            const point = polarToCartesian(radius, angle, centerX, centerY);
+            const text = createSvgElement("text", {
+                x: point.x,
+                y: point.y,
+                ...attributes
+            });
+            text.textContent = textContent;
+            return text;
+        }
+
+        function getCircleAngle(value, total, offsetDegrees = -90) {
+            return ((value / total) * 360 + offsetDegrees) * Math.PI / 180;
+        }
+
+        function createTwentyFourHourClockView() {
+            const ids = {
+                svg: "clock-svg",
+                hourMarkers: "hour-markers",
+                hourMarkersNight: "hour-markers-night",
+                secondsSubdial: "seconds-subdial",
+                hourHand: "hour-hand",
+                hourHandNight: "hour-hand-night",
+                secondsHand: "seconds-subdial-hand",
+                nightClipPath: "night-clip-path",
+                mapOverlay: "clock-map-overlay",
+                mapSurface: "clock-map-surface",
+                mapCoordinates: "clock-map-coordinates",
+                mapCloseButton: "clock-map-close"
+            };
+            const state = {
+                sunriseTime: null,
+                sunsetTime: null,
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+                currentLocation: { lat: 55.7558, lon: 37.6173 },
+                tickTimer: null,
+                root: null,
+                map: null,
+                mapMarker: null
+            };
+
+            function query(id) {
+                return state.root ? state.root.querySelector(`#${id}`) : null;
+            }
 
             function render() {
                 return `
                     <div class="clock-wrapper">
                         <div class="clock-container">
-                            <svg class="clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" id="clock-svg">
+                            <svg class="clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" id="${ids.svg}">
                                 <defs>
                                     <clipPath id="night-clip" clipPathUnits="userSpaceOnUse">
                                         <path
-                                            id="night-clip-path"
+                                            id="${ids.nightClipPath}"
                                             d="M ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center} L ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicDayNightRadius} A ${CLOCK_GEOMETRY.classicDayNightRadius} ${CLOCK_GEOMETRY.classicDayNightRadius} 0 1 1 ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicDayNightRadius} Z"
                                         ></path>
                                     </clipPath>
                                 </defs>
 
                                 <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.classicOuterRadius}" class="metal-ring"></circle>
-                                <g id="hour-markers"></g>
-                                <g id="hour-markers-night" clip-path="url(#night-clip)"></g>
-                                <g id="hands">
-                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand" id="hour-hand"></line>
-                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicMinuteHandLength}" class="minute-hand" id="minute-hand"></line>
-                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicSecondHandLength}" class="second-hand" id="second-hand"></line>
-                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand-night" id="hour-hand-night" clip-path="url(#night-clip)"></line>
-                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicMinuteHandLength}" class="minute-hand-night" id="minute-hand-night" clip-path="url(#night-clip)"></line>
+                                <g id="${ids.hourMarkers}"></g>
+                                <g id="${ids.hourMarkersNight}" clip-path="url(#night-clip)"></g>
+                                <g id="${ids.secondsSubdial}"></g>
+                                <g>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand" id="${ids.hourHand}"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand-night" id="${ids.hourHandNight}" clip-path="url(#night-clip)"></line>
+                                    <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY - CLOCK_GEOMETRY.classicSecondsHandLength}" class="seconds-subdial-hand" id="${ids.secondsHand}"></line>
+                                    <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY}" r="2.5" class="seconds-subdial-center"></circle>
                                     <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.classicCenterDotRadius}" class="center-circle"></circle>
                                 </g>
                             </svg>
+                            <div class="map-overlay" id="${ids.mapOverlay}" hidden>
+                                <div class="map-panel" role="dialog" aria-modal="true" aria-labelledby="map-panel-title">
+                                    <div class="map-panel-header">
+                                        <div>
+                                            <h3 class="map-panel-title" id="map-panel-title">Выбор точки для восхода и заката</h3>
+                                            <p class="map-panel-copy">Нажмите на карту, чтобы выбрать место. Для этой точки часы пересчитают восход и закат. Закрыть можно клавишей Esc.</p>
+                                        </div>
+                                        <button class="map-close-button" id="${ids.mapCloseButton}" type="button">Закрыть</button>
+                                    </div>
+                                    <div class="map-surface" id="${ids.mapSurface}" aria-label="Карта мира для выбора точки"></div>
+                                    <p class="map-coordinates" id="${ids.mapCoordinates}"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
             }
 
-            function mount(root) {
-                root.innerHTML = render();
+            function formatCoordinate(value, positive, negative) {
+                const suffix = value >= 0 ? positive : negative;
+                return `${Math.abs(value).toFixed(2)}° ${suffix}`;
+            }
 
-                createHourMarkers();
-                updateClock();
-                tickTimer = window.setInterval(updateClock, 1000);
+            function updateMapCoordinateText() {
+                const coordinates = query(ids.mapCoordinates);
 
-                SunCalculator.getSunTimes(currentLocation.lat, currentLocation.lon).then((times) => {
-                    sunriseTime = times.sunrise;
-                    sunsetTime = times.sunset;
-                    updateDayNightSections();
+                if (!coordinates) {
+                    return;
+                }
+
+                coordinates.textContent = `${formatCoordinate(state.currentLocation.lat, "N", "S")}, ${formatCoordinate(state.currentLocation.lon, "E", "W")}`;
+            }
+
+            function updateMapMarker() {
+                if (!state.map || !window.L) {
+                    return;
+                }
+
+                const latLng = [state.currentLocation.lat, state.currentLocation.lon];
+
+                if (!state.mapMarker) {
+                    const icon = window.L.divIcon({
+                        className: "",
+                        html: '<div class="map-marker"></div>',
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9]
+                    });
+                    state.mapMarker = window.L.marker(latLng, { icon }).addTo(state.map);
+                } else {
+                    state.mapMarker.setLatLng(latLng);
+                }
+
+                updateMapCoordinateText();
+            }
+
+            function closeMapOverlay() {
+                const overlay = query(ids.mapOverlay);
+
+                if (overlay) {
+                    overlay.hidden = true;
+                }
+            }
+
+            function openMapOverlay() {
+                const overlay = query(ids.mapOverlay);
+
+                if (!overlay) {
+                    return;
+                }
+
+                overlay.hidden = false;
+                updateMapMarker();
+                window.setTimeout(() => {
+                    if (state.map) {
+                        state.map.invalidateSize();
+                        state.map.setView([state.currentLocation.lat, state.currentLocation.lon], state.map.getZoom(), { animate: false });
+                    }
+                }, 0);
+            }
+
+            function isMapOpen() {
+                const overlay = query(ids.mapOverlay);
+                return Boolean(overlay && !overlay.hidden);
+            }
+
+            function refreshSunTimes() {
+                const { lat, lon } = state.currentLocation;
+                return TimeZoneResolver.getTimeZone(lat, lon)
+                    .then((timeZone) => {
+                        state.timeZone = timeZone;
+                        const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+                            timeZone,
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit"
+                        });
+                        const dateParts = Object.fromEntries(
+                            dateFormatter.formatToParts(new Date()).map((part) => [part.type, part.value])
+                        );
+                        const locationDate = `${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+
+                        return SunCalculator.getSunTimes(lat, lon, locationDate, timeZone);
+                    })
+                    .then((times) => {
+                        if (!state.root) {
+                            return;
+                        }
+
+                        state.sunriseTime = times.sunrise;
+                        state.sunsetTime = times.sunset;
+                        state.timeZone = times.timeZone || state.timeZone;
+                        updateDayNightSections();
+                    });
+            }
+
+            function handleMapPick(lat, lon) {
+                state.currentLocation = { lat, lon };
+                updateMapMarker();
+                refreshSunTimes();
+                closeMapOverlay();
+            }
+
+            function initializeMap() {
+                const surface = query(ids.mapSurface);
+
+                if (!surface || state.map) {
+                    return;
+                }
+
+                if (!window.L) {
+                    surface.classList.add("map-surface--fallback");
+                    surface.textContent = "Не удалось загрузить библиотеку карты. Проверьте подключение к сети и перезагрузите страницу.";
+                    return;
+                }
+
+                state.map = window.L.map(surface, {
+                    center: [state.currentLocation.lat, state.currentLocation.lon],
+                    zoom: 2,
+                    minZoom: 2,
+                    maxZoom: 8,
+                    worldCopyJump: true,
+                    zoomControl: true,
+                    attributionControl: true
+                });
+
+                window.L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(state.map);
+
+                state.map.on("click", (event) => {
+                    handleMapPick(event.latlng.lat, event.latlng.lng);
+                });
+
+                updateMapMarker();
+            }
+
+            function bindMapInteractions() {
+                initializeMap();
+                query(ids.mapCloseButton)?.addEventListener("click", closeMapOverlay);
+                query(ids.mapOverlay)?.addEventListener("click", (event) => {
+                    if (event.target === query(ids.mapOverlay)) {
+                        closeMapOverlay();
+                    }
                 });
             }
 
-            function unmount() {
-                if (tickTimer) {
-                    window.clearInterval(tickTimer);
-                    tickTimer = null;
+            function appendMinuteMarkers(markers, markersNight) {
+                for (let totalMinutes = 0; totalMinutes < 24 * 60; totalMinutes += 1) {
+                    if (totalMinutes % 60 === 0) {
+                        continue;
+                    }
+
+                    const minuteWithinHour = totalMinutes % 60;
+                    const angle = getCircleAngle(totalMinutes, 24 * 60);
+                    let innerRadius = null;
+                    let className = null;
+
+                    if (minuteWithinHour % 15 === 0) {
+                        innerRadius = CLOCK_GEOMETRY.classicMinuteMarkerQuarterInnerRadius;
+                        className = "marker-minute marker-minute--quarter";
+                    } else if (minuteWithinHour % 5 === 0) {
+                        innerRadius = CLOCK_GEOMETRY.classicMinuteMarkerFiveInnerRadius;
+                        className = "marker-minute marker-minute--five";
+                    } else {
+                        continue;
+                    }
+
+                    markers.appendChild(
+                        createLineByAngle(
+                            CLOCK_GEOMETRY.classicMinuteMarkerOuterRadius,
+                            innerRadius,
+                            angle,
+                            { class: className }
+                        )
+                    );
+
+                    markersNight.appendChild(
+                        createLineByAngle(
+                            CLOCK_GEOMETRY.classicMinuteMarkerOuterRadius,
+                            innerRadius,
+                            angle,
+                            { class: className.replace("marker-minute", "marker-minute-night") }
+                        )
+                    );
+                }
+            }
+
+            function appendHourMarkers(markers, markersNight) {
+                for (let hour = 0; hour < 24; hour += 1) {
+                    const angle = getCircleAngle(hour, 24);
+
+                    markers.appendChild(
+                        createLineByAngle(
+                            CLOCK_GEOMETRY.classicMarkerInnerRadius,
+                            CLOCK_GEOMETRY.classicMarkerOuterRadius,
+                            angle,
+                            { class: "marker" }
+                        )
+                    );
+                    markersNight.appendChild(
+                        createLineByAngle(
+                            CLOCK_GEOMETRY.classicMarkerInnerRadius,
+                            CLOCK_GEOMETRY.classicMarkerOuterRadius,
+                            angle,
+                            { class: "marker-night" }
+                        )
+                    );
+                    markers.appendChild(
+                        createTextByAngle(
+                            CLOCK_GEOMETRY.classicMarkerLabelRadius,
+                            angle,
+                            hour.toString(),
+                            { class: "marker-number" }
+                        )
+                    );
+                    markersNight.appendChild(
+                        createTextByAngle(
+                            CLOCK_GEOMETRY.classicMarkerLabelRadius,
+                            angle,
+                            hour.toString(),
+                            { class: "marker-number-night" }
+                        )
+                    );
                 }
             }
 
             function createHourMarkers() {
-                const markers = document.getElementById("hour-markers");
-                const markersNight = document.getElementById("hour-markers-night");
+                const markers = query(ids.hourMarkers);
+                const markersNight = query(ids.hourMarkersNight);
                 markers.innerHTML = "";
                 markersNight.innerHTML = "";
+                appendMinuteMarkers(markers, markersNight);
+                appendHourMarkers(markers, markersNight);
+            }
 
-                for (let hour = 0; hour < 24; hour += 1) {
-                    const angle = (hour * 15 - 90) * Math.PI / 180;
-                    const x1 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerInnerRadius * Math.cos(angle);
-                    const y1 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerInnerRadius * Math.sin(angle);
-                    const x2 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerOuterRadius * Math.cos(angle);
-                    const y2 = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerOuterRadius * Math.sin(angle);
-                    const textX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerLabelRadius * Math.cos(angle);
-                    const textY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMarkerLabelRadius * Math.sin(angle);
+            function createSecondsSubdial() {
+                const subdial = query(ids.secondsSubdial);
+                const centerX = CLOCK_GEOMETRY.center;
+                const centerY = CLOCK_GEOMETRY.classicSecondsSubdialCenterY;
+                subdial.innerHTML = "";
 
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", x1);
-                    line.setAttribute("y1", y1);
-                    line.setAttribute("x2", x2);
-                    line.setAttribute("y2", y2);
-                    line.setAttribute("class", "marker");
-                    markers.appendChild(line);
+                subdial.appendChild(
+                    createSvgElement("circle", {
+                        cx: centerX,
+                        cy: centerY,
+                        r: CLOCK_GEOMETRY.classicSecondsSubdialRadius,
+                        class: "seconds-subdial"
+                    })
+                );
 
-                    const lineNight = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    lineNight.setAttribute("x1", x1);
-                    lineNight.setAttribute("y1", y1);
-                    lineNight.setAttribute("x2", x2);
-                    lineNight.setAttribute("y2", y2);
-                    lineNight.setAttribute("class", "marker-night");
-                    markersNight.appendChild(lineNight);
+                for (let second = 0; second < 60; second += 1) {
+                    const angle = getCircleAngle(second, 60);
+                    const isMajor = second % 5 === 0;
+                    const innerRadius = isMajor
+                        ? CLOCK_GEOMETRY.classicSecondsSubdialMajorInnerRadius
+                        : CLOCK_GEOMETRY.classicSecondsSubdialMinorInnerRadius;
 
-                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    text.setAttribute("x", textX);
-                    text.setAttribute("y", textY);
-                    text.setAttribute("class", "marker-number");
-                    text.textContent = hour.toString();
-                    markers.appendChild(text);
+                    subdial.appendChild(
+                        createLineByAngle(
+                            innerRadius,
+                            CLOCK_GEOMETRY.classicSecondsSubdialOuterRadius,
+                            angle,
+                            { class: isMajor ? "seconds-subdial-tick seconds-subdial-tick--major" : "seconds-subdial-tick" },
+                            centerX,
+                            centerY
+                        )
+                    );
 
-                    const textNight = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    textNight.setAttribute("x", textX);
-                    textNight.setAttribute("y", textY);
-                    textNight.setAttribute("class", "marker-number-night");
-                    textNight.textContent = hour.toString();
-                    markersNight.appendChild(textNight);
+                    if (second % 10 === 0) {
+                        subdial.appendChild(
+                            createTextByAngle(
+                                CLOCK_GEOMETRY.classicSecondsSubdialLabelRadius,
+                                angle,
+                                second.toString(),
+                                { class: "seconds-subdial-label" },
+                                centerX,
+                                centerY
+                            )
+                        );
+                    }
                 }
             }
 
             function updateDayNightSections() {
-                if (!sunriseTime || !sunsetTime) {
+                if (!state.sunriseTime || !state.sunsetTime) {
                     return;
                 }
 
-                const svg = document.getElementById("clock-svg");
-                const existingSections = document.querySelectorAll(".day-section, .night-section");
-                existingSections.forEach((element) => element.remove());
+                const svg = query(ids.svg);
+                svg.querySelectorAll(".day-section, .night-section").forEach((element) => element.remove());
 
-                const now = new Date();
-                const sunrise = new Date(sunriseTime);
-                const sunset = new Date(sunsetTime);
-                sunrise.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-                sunset.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-
-                const getTimeAngle = (date) => {
-                    const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
-                    return (hours * 15 - 90) * Math.PI / 180;
+                const getZonedTime = (date) => {
+                    const formatter = new Intl.DateTimeFormat("en-GB", {
+                        timeZone: state.timeZone,
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false
+                    });
+                    const parts = formatter.formatToParts(date);
+                    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+                    return {
+                        hours: Number(values.hour),
+                        minutes: Number(values.minute),
+                        seconds: Number(values.second)
+                    };
                 };
 
-                const sunriseAngle = getTimeAngle(sunrise);
-                const sunsetAngle = getTimeAngle(sunset);
+                const getTimeAngle = (date) => {
+                    const time = getZonedTime(date);
+                    const hours = time.hours + time.minutes / 60 + time.seconds / 3600;
+                    return getCircleAngle(hours, 24);
+                };
+
+                const sunriseAngle = getTimeAngle(state.sunriseTime);
+                const sunsetAngle = getTimeAngle(state.sunsetTime);
 
                 const createArc = (startAngle, endAngle, className) => {
-                    const startX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicDayNightRadius * Math.cos(startAngle);
-                    const startY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicDayNightRadius * Math.sin(startAngle);
-                    const endX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicDayNightRadius * Math.cos(endAngle);
-                    const endY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicDayNightRadius * Math.sin(endAngle);
+                    const start = polarToCartesian(CLOCK_GEOMETRY.classicDayNightRadius, startAngle);
+                    const end = polarToCartesian(CLOCK_GEOMETRY.classicDayNightRadius, endAngle);
                     const largeArc = (endAngle - startAngle) % (2 * Math.PI) > Math.PI ? 1 : 0;
 
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    path.setAttribute("d", [
-                        "M", CLOCK_GEOMETRY.center, CLOCK_GEOMETRY.center,
-                        "L", startX, startY,
-                        "A", CLOCK_GEOMETRY.classicDayNightRadius, CLOCK_GEOMETRY.classicDayNightRadius, 0, largeArc, 1, endX, endY,
-                        "Z"
-                    ].join(" "));
-                    path.setAttribute("class", className);
-                    return path;
+                    return createSvgElement("path", {
+                        d: [
+                            "M", CLOCK_GEOMETRY.center, CLOCK_GEOMETRY.center,
+                            "L", start.x, start.y,
+                            "A", CLOCK_GEOMETRY.classicDayNightRadius, CLOCK_GEOMETRY.classicDayNightRadius, 0, largeArc, 1, end.x, end.y,
+                            "Z"
+                        ].join(" "),
+                        class: className
+                    });
                 };
 
                 const daySection = createArc(sunriseAngle, sunsetAngle, "day-section");
                 const nightSection = createArc(sunsetAngle, sunriseAngle + 2 * Math.PI, "night-section");
-
-                svg.insertBefore(daySection, document.getElementById("hour-markers"));
-                svg.insertBefore(nightSection, document.getElementById("hour-markers"));
-                document.getElementById("night-clip-path").setAttribute("d", nightSection.getAttribute("d"));
+                svg.insertBefore(daySection, query(ids.hourMarkers));
+                svg.insertBefore(nightSection, query(ids.hourMarkers));
+                query(ids.nightClipPath).setAttribute("d", nightSection.getAttribute("d"));
             }
 
             function updateHands() {
                 const now = new Date();
-                const hours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-                const minutes = now.getMinutes() + now.getSeconds() / 60;
-                const seconds = now.getSeconds();
+                const hourAngle = getCircleAngle(
+                    now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600,
+                    24
+                );
+                const secondAngle = getCircleAngle(now.getSeconds(), 60);
+                const hourPoint = polarToCartesian(CLOCK_GEOMETRY.classicHourHandLength, hourAngle);
+                const secondPoint = polarToCartesian(
+                    CLOCK_GEOMETRY.classicSecondsHandLength,
+                    secondAngle,
+                    CLOCK_GEOMETRY.center,
+                    CLOCK_GEOMETRY.classicSecondsSubdialCenterY
+                );
 
-                const hourAngle = (hours * 15 - 90) * Math.PI / 180;
-                const minuteAngle = (minutes * 6 - 90) * Math.PI / 180;
-                const secondAngle = (seconds * 6 - 90) * Math.PI / 180;
-
-                const hourX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicHourHandLength * Math.cos(hourAngle);
-                const hourY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicHourHandLength * Math.sin(hourAngle);
-                const minuteX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMinuteHandLength * Math.cos(minuteAngle);
-                const minuteY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicMinuteHandLength * Math.sin(minuteAngle);
-                const secondX = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicSecondHandLength * Math.cos(secondAngle);
-                const secondY = CLOCK_GEOMETRY.center + CLOCK_GEOMETRY.classicSecondHandLength * Math.sin(secondAngle);
-
-                document.getElementById("hour-hand").setAttribute("x2", hourX);
-                document.getElementById("hour-hand").setAttribute("y2", hourY);
-                document.getElementById("hour-hand-night").setAttribute("x2", hourX);
-                document.getElementById("hour-hand-night").setAttribute("y2", hourY);
-                document.getElementById("minute-hand").setAttribute("x2", minuteX);
-                document.getElementById("minute-hand").setAttribute("y2", minuteY);
-                document.getElementById("minute-hand-night").setAttribute("x2", minuteX);
-                document.getElementById("minute-hand-night").setAttribute("y2", minuteY);
-                document.getElementById("second-hand").setAttribute("x2", secondX);
-                document.getElementById("second-hand").setAttribute("y2", secondY);
+                query(ids.hourHand).setAttribute("x2", hourPoint.x);
+                query(ids.hourHand).setAttribute("y2", hourPoint.y);
+                query(ids.hourHandNight).setAttribute("x2", hourPoint.x);
+                query(ids.hourHandNight).setAttribute("y2", hourPoint.y);
+                query(ids.secondsHand).setAttribute("x2", secondPoint.x);
+                query(ids.secondsHand).setAttribute("y2", secondPoint.y);
             }
 
-            function updateClock() {
+            function mount(root) {
+                state.root = root;
+                root.innerHTML = render();
+                createHourMarkers();
+                createSecondsSubdial();
+                bindMapInteractions();
+                updateMapMarker();
                 updateHands();
+                state.tickTimer = window.setInterval(updateHands, 1000);
+                refreshSunTimes();
             }
 
-            return { mount, unmount };
-        })();
+            function unmount() {
+                if (state.tickTimer) {
+                    window.clearInterval(state.tickTimer);
+                    state.tickTimer = null;
+                }
 
-        const RotaryDialClockView = (() => {
-            let frameId = null;
-            let hoursRing = null;
-            let minutesRing = null;
-            let secondsRing = null;
-            const svgNamespace = "http://www.w3.org/2000/svg";
+                if (state.map) {
+                    state.map.remove();
+                    state.map = null;
+                    state.mapMarker = null;
+                }
+
+                state.root = null;
+            }
+
+            function getHint(baseHint) {
+                return `${baseHint} | ${MAP_SHORTCUT_HINT}`;
+            }
+
+            function handleKeydown(event) {
+                if (event.key === "Escape" && isMapOpen()) {
+                    closeMapOverlay();
+                    return true;
+                }
+
+                if (event.key === "m" || event.key === "M" || event.key === "ь" || event.key === "Ь") {
+                    if (isMapOpen()) {
+                        closeMapOverlay();
+                    } else {
+                        openMapOverlay();
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            return { mount, unmount, getHint, handleKeydown };
+        }
+
+        function createRotaryDialClockView() {
+            const ids = {
+                hoursRing: "rotary-hours-ring",
+                minutesRing: "rotary-minutes-ring",
+                secondsRing: "rotary-seconds-ring"
+            };
+            const state = {
+                frameId: null,
+                root: null
+            };
+
+            function query(id) {
+                return state.root ? state.root.querySelector(`#${id}`) : null;
+            }
 
             function render() {
                 return `
@@ -572,9 +1203,9 @@
                                 <circle class="rotary-track rotary-track--hours" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackHours}"></circle>
                                 <circle class="rotary-track rotary-track--minutes" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackMinutes}"></circle>
                                 <circle class="rotary-track rotary-track--seconds" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryTrackSeconds}"></circle>
-                                <g id="rotary-hours-ring"></g>
-                                <g id="rotary-minutes-ring"></g>
-                                <g id="rotary-seconds-ring"></g>
+                                <g id="${ids.hoursRing}"></g>
+                                <g id="${ids.minutesRing}"></g>
+                                <g id="${ids.secondsRing}"></g>
                                 <circle class="rotary-center-dot" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.rotaryCenterDotRadius}"></circle>
                             </svg>
                         </div>
@@ -582,73 +1213,141 @@
                 `;
             }
 
-            function buildRing(ring, total, radius, fontSize, className, formatter) {
-                ring.innerHTML = "";
-                ring.setAttribute("transform", `rotate(0 ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+            function appendTicks(ring, config) {
+                if (!config.minorTickInnerRadius || !config.minorTickOuterRadius) {
+                    return;
+                }
 
-                for (let value = 0; value < total; value += 1) {
-                    const angleDegrees = (value / total) * 360 - 90;
-                    const angle = angleDegrees * Math.PI / 180;
-                    const x = CLOCK_GEOMETRY.center + radius * Math.cos(angle);
-                    const y = CLOCK_GEOMETRY.center + radius * Math.sin(angle);
-                    const label = document.createElementNS(svgNamespace, "text");
-                    label.setAttribute("x", x);
-                    label.setAttribute("y", y);
-                    label.setAttribute("class", className);
-                    label.style.fontSize = `${fontSize}px`;
-                    label.setAttribute("transform", `rotate(${angleDegrees} ${x} ${y})`);
-                    label.textContent = formatter(value);
+                for (let value = 0; value < config.total; value += 1) {
+                    if (value % config.step === 0) {
+                        continue;
+                    }
+
+                    ring.appendChild(
+                        createLineByAngle(
+                            config.minorTickInnerRadius,
+                            config.minorTickOuterRadius,
+                            getCircleAngle(value, config.total),
+                            { class: "rotary-tick rotary-tick--minor" }
+                        )
+                    );
+                }
+            }
+
+            function appendLabelsAndMajorTicks(ring, config) {
+                for (let value = 0; value < config.total; value += config.step) {
+                    const angle = getCircleAngle(value, config.total);
+                    const point = polarToCartesian(config.labelRadius, angle);
+                    const rotation = (value / config.total) * 360;
+
+                    ring.appendChild(
+                        createLineByAngle(
+                            config.tickInnerRadius,
+                            config.tickOuterRadius,
+                            angle,
+                            { class: config.tickClassName }
+                        )
+                    );
+
+                    const label = createTextByAngle(
+                        config.labelRadius,
+                        angle,
+                        config.formatter(value),
+                        { class: config.className }
+                    );
+                    label.style.fontSize = `${config.fontSize}px`;
+                    label.setAttribute("transform", `rotate(${rotation} ${point.x} ${point.y})`);
                     ring.appendChild(label);
                 }
             }
 
+            function buildRing(ring, config) {
+                ring.innerHTML = "";
+                ring.setAttribute("transform", `rotate(0 ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                appendTicks(ring, config);
+                appendLabelsAndMajorTicks(ring, config);
+            }
+
             function update() {
                 const now = new Date();
-                const milliseconds = now.getMilliseconds();
-                const seconds = now.getSeconds() + milliseconds / 1000;
+                const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
                 const minutes = now.getMinutes() + seconds / 60;
                 const hours = (now.getHours() % 24) + minutes / 60;
 
-                hoursRing.setAttribute("transform", `rotate(${-hours * 15} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
-                minutesRing.setAttribute("transform", `rotate(${-minutes * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
-                secondsRing.setAttribute("transform", `rotate(${-seconds * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
-                frameId = window.requestAnimationFrame(update);
+                query(ids.hoursRing).setAttribute("transform", `rotate(${-hours * 15} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                query(ids.minutesRing).setAttribute("transform", `rotate(${-minutes * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                query(ids.secondsRing).setAttribute("transform", `rotate(${-seconds * 6} ${CLOCK_GEOMETRY.center} ${CLOCK_GEOMETRY.center})`);
+                state.frameId = window.requestAnimationFrame(update);
             }
 
             function mount(root) {
+                state.root = root;
                 root.innerHTML = render();
 
-                hoursRing = document.getElementById("rotary-hours-ring");
-                minutesRing = document.getElementById("rotary-minutes-ring");
-                secondsRing = document.getElementById("rotary-seconds-ring");
-
-                buildRing(hoursRing, 24, CLOCK_GEOMETRY.rotaryLabelHours, CLOCK_GEOMETRY.rotaryFontHours, "rotary-text rotary-text--hours", (value) => value.toString());
-                buildRing(minutesRing, 60, CLOCK_GEOMETRY.rotaryLabelMinutes, CLOCK_GEOMETRY.rotaryFontMinutes, "rotary-text rotary-text--minutes", (value) => value.toString());
-                buildRing(secondsRing, 60, CLOCK_GEOMETRY.rotaryLabelSeconds, CLOCK_GEOMETRY.rotaryFontSeconds, "rotary-text rotary-text--seconds", (value) => value.toString());
+                buildRing(query(ids.hoursRing), {
+                    total: 24,
+                    step: 1,
+                    labelRadius: CLOCK_GEOMETRY.rotaryLabelHours,
+                    tickInnerRadius: CLOCK_GEOMETRY.rotaryTickInnerHours,
+                    tickOuterRadius: CLOCK_GEOMETRY.rotaryTickOuterHours,
+                    fontSize: CLOCK_GEOMETRY.rotaryFontHours,
+                    className: "rotary-text rotary-text--hours",
+                    tickClassName: "rotary-tick rotary-tick--hours",
+                    formatter: (value) => value.toString()
+                });
+                buildRing(query(ids.minutesRing), {
+                    total: 60,
+                    step: 5,
+                    labelRadius: CLOCK_GEOMETRY.rotaryLabelMinutes,
+                    minorTickInnerRadius: CLOCK_GEOMETRY.rotaryMinorTickInnerMinutes,
+                    minorTickOuterRadius: CLOCK_GEOMETRY.rotaryMinorTickOuterMinutes,
+                    tickInnerRadius: CLOCK_GEOMETRY.rotaryTickInnerMinutes,
+                    tickOuterRadius: CLOCK_GEOMETRY.rotaryTickOuterMinutes,
+                    fontSize: CLOCK_GEOMETRY.rotaryFontMinutes,
+                    className: "rotary-text rotary-text--minutes",
+                    tickClassName: "rotary-tick rotary-tick--minutes",
+                    formatter: (value) => value.toString()
+                });
+                buildRing(query(ids.secondsRing), {
+                    total: 60,
+                    step: 5,
+                    labelRadius: CLOCK_GEOMETRY.rotaryLabelSeconds,
+                    minorTickInnerRadius: CLOCK_GEOMETRY.rotaryMinorTickInnerSeconds,
+                    minorTickOuterRadius: CLOCK_GEOMETRY.rotaryMinorTickOuterSeconds,
+                    tickInnerRadius: CLOCK_GEOMETRY.rotaryTickInnerSeconds,
+                    tickOuterRadius: CLOCK_GEOMETRY.rotaryTickOuterSeconds,
+                    fontSize: CLOCK_GEOMETRY.rotaryFontSeconds,
+                    className: "rotary-text rotary-text--seconds",
+                    tickClassName: "rotary-tick rotary-tick--seconds",
+                    formatter: (value) => value.toString()
+                });
 
                 update();
             }
 
             function unmount() {
-                if (frameId) {
-                    window.cancelAnimationFrame(frameId);
-                    frameId = null;
+                if (state.frameId) {
+                    window.cancelAnimationFrame(state.frameId);
+                    state.frameId = null;
                 }
+
+                state.root = null;
             }
 
             return { mount, unmount };
-        })();
+        }
+
+        const TwentyFourHourClockView = createTwentyFourHourClockView();
+        const RotaryDialClockView = createRotaryDialClockView();
 
         const clockViews = [
             {
-                title: "24 Hour Clock",
-                mount: TwentyFourHourClockView.mount,
-                unmount: TwentyFourHourClockView.unmount
+                title: "Sunrise/Sunset Clock",
+                ...TwentyFourHourClockView
             },
             {
                 title: "Rotary Dial Clock",
-                mount: RotaryDialClockView.mount,
-                unmount: RotaryDialClockView.unmount
+                ...RotaryDialClockView
             }
         ];
 
@@ -664,7 +1363,10 @@
                     return;
                 }
 
-                hint.textContent = hintMediaQuery && hintMediaQuery.matches ? MOBILE_HINT : DESKTOP_HINT;
+                const baseHint = hintMediaQuery && hintMediaQuery.matches ? MOBILE_HINT : DESKTOP_HINT;
+                hint.textContent = activeClock && typeof activeClock.getHint === "function"
+                    ? activeClock.getHint(baseHint)
+                    : baseHint;
             }
 
             function mountCurrentClock() {
@@ -678,6 +1380,7 @@
                 activeClock = clockViews[currentIndex];
                 title.textContent = activeClock.title;
                 activeClock.mount(root);
+                updateHint();
             }
 
             function showClock(nextIndex) {
@@ -688,6 +1391,11 @@
 
             function handleKeydown(event) {
                 if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+                    return;
+                }
+
+                if (activeClock && typeof activeClock.handleKeydown === "function" && activeClock.handleKeydown(event)) {
+                    event.preventDefault();
                     return;
                 }
 
@@ -724,7 +1432,6 @@
             function init() {
                 hintMediaQuery = window.matchMedia("(max-width: 720px)");
                 mountCurrentClock();
-                updateHint();
                 window.addEventListener("keydown", handleKeydown);
                 window.addEventListener("pointerup", handlePointerUp);
                 hintMediaQuery.addEventListener("change", updateHint);
