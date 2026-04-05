@@ -467,6 +467,100 @@
             fill: rgba(245, 245, 245, 0.92);
         }
 
+        .retrograde-clock {
+            position: relative;
+            width: min(84vw, var(--clock-diameter));
+            aspect-ratio: 1;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+        }
+
+        .retrograde-clock-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .retrograde-dial {
+            fill: rgba(255, 255, 255, 0.03);
+            stroke: rgba(245, 245, 245, 0.14);
+            stroke-width: 1.2;
+        }
+
+        .retrograde-arc {
+            fill: none;
+            stroke: rgba(245, 245, 245, 0.16);
+            stroke-width: 1.4;
+        }
+
+        .retrograde-tick {
+            stroke: rgba(245, 245, 245, 0.35);
+            stroke-width: 1.1;
+            stroke-linecap: round;
+        }
+
+        .retrograde-tick--major {
+            stroke: rgba(245, 245, 245, 0.82);
+            stroke-width: 2;
+        }
+
+        .retrograde-label {
+            fill: rgba(245, 245, 245, 0.86);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 13px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .retrograde-label-caption {
+            fill: rgba(245, 245, 245, 0.42);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            text-anchor: middle;
+        }
+
+        .retrograde-hand {
+            stroke-linecap: round;
+        }
+
+        .retrograde-hand--minute {
+            stroke: rgba(245, 245, 245, 0.92);
+            stroke-width: 3.2;
+        }
+
+        .retrograde-hand--second {
+            stroke: rgba(245, 245, 245, 0.56);
+            stroke-width: 2;
+        }
+
+        .retrograde-center-dot,
+        .hour-subdial-center-dot {
+            fill: rgba(245, 245, 245, 0.92);
+        }
+
+        .hour-subdial {
+            fill: rgba(255, 255, 255, 0.02);
+            stroke: rgba(245, 245, 245, 0.14);
+            stroke-width: 1;
+        }
+
+        .hour-subdial-label {
+            fill: rgba(245, 245, 245, 0.84);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 12px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .hour-subdial-hand {
+            stroke: rgba(245, 245, 245, 0.94);
+            stroke-width: 2.8;
+            stroke-linecap: round;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 16px;
@@ -497,7 +591,8 @@
                 border-radius: 20px;
             }
 
-            .rotary-clock {
+            .rotary-clock,
+            .retrograde-clock {
                 width: min(92vw, var(--clock-diameter));
             }
         }
@@ -566,7 +661,21 @@
             rotaryFontHours: 18,
             rotaryFontMinutes: 16,
             rotaryFontSeconds: 14,
-            rotaryCenterDotRadius: 4
+            rotaryCenterDotRadius: 4,
+            retrogradeOuterRadius: 196,
+            retrogradeArcRadius: 164,
+            retrogradeMinorTickInnerRadius: 151,
+            retrogradeMajorTickInnerRadius: 143,
+            retrogradeLabelRadius: 128,
+            retrogradeHandLengthMinute: 152,
+            retrogradeHandLengthSecond: 146,
+            retrogradeCenterDotRadius: 6,
+            retrogradeSubdialCenterY: 290,
+            retrogradeSubdialRadius: 54,
+            retrogradeSubdialLabelRadius: 40,
+            retrogradeHourHandLength: 30,
+            retrogradeSubdialCenterDotRadius: 4,
+            retrogradeReturnDuration: 180
         };
 
         const SunCalculator = (() => {
@@ -1179,6 +1288,254 @@
             return { mount, unmount, getHint, handleKeydown };
         }
 
+        function createRetrogradeClockView() {
+            const ids = {
+                minuteHand: "retrograde-minute-hand",
+                secondHand: "retrograde-second-hand",
+                hourHand: "retrograde-hour-hand",
+                sharedScale: "retrograde-shared-scale",
+                hourSubdial: "retrograde-hour-subdial"
+            };
+            const state = {
+                frameId: null,
+                root: null,
+                lastSecondValue: null,
+                lastMinuteValue: null,
+                secondReturnStart: null,
+                minuteReturnStart: null
+            };
+
+            function query(id) {
+                return state.root ? state.root.querySelector(`#${id}`) : null;
+            }
+
+            function render() {
+                return `
+                    <div class="clock-wrapper">
+                        <div class="retrograde-clock">
+                            <svg class="retrograde-clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" aria-hidden="true">
+                                <circle class="retrograde-dial" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.retrogradeOuterRadius}"></circle>
+                                <path class="retrograde-arc" d="${describeRetrogradeArc(CLOCK_GEOMETRY.retrogradeArcRadius)}"></path>
+                                <g id="${ids.sharedScale}"></g>
+                                <line
+                                    id="${ids.minuteHand}"
+                                    class="retrograde-hand retrograde-hand--minute"
+                                    x1="${CLOCK_GEOMETRY.center}"
+                                    y1="${CLOCK_GEOMETRY.center}"
+                                    x2="${CLOCK_GEOMETRY.center}"
+                                    y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.retrogradeHandLengthMinute}"
+                                ></line>
+                                <line
+                                    id="${ids.secondHand}"
+                                    class="retrograde-hand retrograde-hand--second"
+                                    x1="${CLOCK_GEOMETRY.center}"
+                                    y1="${CLOCK_GEOMETRY.center}"
+                                    x2="${CLOCK_GEOMETRY.center}"
+                                    y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.retrogradeHandLengthSecond}"
+                                ></line>
+                                <circle class="retrograde-center-dot" cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.retrogradeCenterDotRadius}"></circle>
+                                <g id="${ids.hourSubdial}"></g>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function getRetrogradeAngle(value) {
+                return Math.PI + (value / 60) * Math.PI;
+            }
+
+            function describeRetrogradeArc(radius) {
+                const start = polarToCartesian(radius, Math.PI);
+                const end = polarToCartesian(radius, Math.PI * 2);
+                return `M ${start.x} ${start.y} A ${radius} ${radius} 0 0 1 ${end.x} ${end.y}`;
+            }
+
+            function buildSharedScale() {
+                const scale = query(ids.sharedScale);
+                scale.innerHTML = "";
+
+                for (let value = 0; value <= 60; value += 1) {
+                    const angle = getRetrogradeAngle(value);
+                    const isMajor = value % 5 === 0;
+                    const innerRadius = isMajor
+                        ? CLOCK_GEOMETRY.retrogradeMajorTickInnerRadius
+                        : CLOCK_GEOMETRY.retrogradeMinorTickInnerRadius;
+
+                    scale.appendChild(
+                        createLineByAngle(
+                            innerRadius,
+                            CLOCK_GEOMETRY.retrogradeArcRadius,
+                            angle,
+                            { class: isMajor ? "retrograde-tick retrograde-tick--major" : "retrograde-tick" }
+                        )
+                    );
+
+                    if (isMajor) {
+                        scale.appendChild(
+                            createTextByAngle(
+                                CLOCK_GEOMETRY.retrogradeLabelRadius,
+                                angle,
+                                value.toString().padStart(2, "0"),
+                                { class: "retrograde-label" }
+                            )
+                        );
+                    }
+                }
+
+                const caption = createSvgElement("text", {
+                    x: CLOCK_GEOMETRY.center,
+                    y: 108,
+                    class: "retrograde-label-caption"
+                });
+                caption.textContent = "MIN / SEC";
+                scale.appendChild(caption);
+            }
+
+            function buildHourSubdial() {
+                const subdial = query(ids.hourSubdial);
+                const centerX = CLOCK_GEOMETRY.center;
+                const centerY = CLOCK_GEOMETRY.retrogradeSubdialCenterY;
+                const romanHours = ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"];
+
+                subdial.innerHTML = "";
+                subdial.appendChild(
+                    createSvgElement("circle", {
+                        cx: centerX,
+                        cy: centerY,
+                        r: CLOCK_GEOMETRY.retrogradeSubdialRadius,
+                        class: "hour-subdial"
+                    })
+                );
+
+                romanHours.forEach((label, index) => {
+                    const angle = getCircleAngle(index, 12);
+                    subdial.appendChild(
+                        createTextByAngle(
+                            CLOCK_GEOMETRY.retrogradeSubdialLabelRadius,
+                            angle,
+                            label,
+                            { class: "hour-subdial-label" },
+                            centerX,
+                            centerY
+                        )
+                    );
+                });
+
+                subdial.appendChild(
+                    createSvgElement("line", {
+                        id: ids.hourHand,
+                        x1: centerX,
+                        y1: centerY,
+                        x2: centerX,
+                        y2: centerY - CLOCK_GEOMETRY.retrogradeHourHandLength,
+                        class: "hour-subdial-hand"
+                    })
+                );
+                subdial.appendChild(
+                    createSvgElement("circle", {
+                        cx: centerX,
+                        cy: centerY,
+                        r: CLOCK_GEOMETRY.retrogradeSubdialCenterDotRadius,
+                        class: "hour-subdial-center-dot"
+                    })
+                );
+            }
+
+            function update() {
+                const now = new Date();
+                const timestamp = performance.now();
+                const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+                const minutes = now.getMinutes() + seconds / 60;
+                const hours = (now.getHours() % 12) + minutes / 60;
+                const wrappedSecond = state.lastSecondValue !== null && seconds < state.lastSecondValue;
+                const wrappedMinute = state.lastMinuteValue !== null && minutes < state.lastMinuteValue;
+
+                if (wrappedSecond) {
+                    state.secondReturnStart = timestamp;
+                }
+
+                if (wrappedMinute) {
+                    state.minuteReturnStart = timestamp;
+                }
+
+                let displayedSeconds = seconds;
+                let displayedMinutes = minutes;
+
+                if (state.secondReturnStart !== null) {
+                    const progress = Math.min(1, (timestamp - state.secondReturnStart) / CLOCK_GEOMETRY.retrogradeReturnDuration);
+                    displayedSeconds = 60 * (1 - progress);
+
+                    if (progress >= 1) {
+                        state.secondReturnStart = null;
+                        displayedSeconds = seconds;
+                    }
+                }
+
+                if (state.minuteReturnStart !== null) {
+                    const progress = Math.min(1, (timestamp - state.minuteReturnStart) / CLOCK_GEOMETRY.retrogradeReturnDuration);
+                    displayedMinutes = 60 * (1 - progress);
+
+                    if (progress >= 1) {
+                        state.minuteReturnStart = null;
+                        displayedMinutes = minutes;
+                    }
+                }
+
+                const minutePoint = polarToCartesian(
+                    CLOCK_GEOMETRY.retrogradeHandLengthMinute,
+                    getRetrogradeAngle(displayedMinutes),
+                    CLOCK_GEOMETRY.center,
+                    CLOCK_GEOMETRY.center
+                );
+                const secondPoint = polarToCartesian(
+                    CLOCK_GEOMETRY.retrogradeHandLengthSecond,
+                    getRetrogradeAngle(displayedSeconds),
+                    CLOCK_GEOMETRY.center,
+                    CLOCK_GEOMETRY.center
+                );
+                const hourPoint = polarToCartesian(
+                    CLOCK_GEOMETRY.retrogradeHourHandLength,
+                    getCircleAngle(hours, 12),
+                    CLOCK_GEOMETRY.center,
+                    CLOCK_GEOMETRY.retrogradeSubdialCenterY
+                );
+
+                query(ids.minuteHand).setAttribute("x2", minutePoint.x);
+                query(ids.minuteHand).setAttribute("y2", minutePoint.y);
+                query(ids.secondHand).setAttribute("x2", secondPoint.x);
+                query(ids.secondHand).setAttribute("y2", secondPoint.y);
+                query(ids.hourHand).setAttribute("x2", hourPoint.x);
+                query(ids.hourHand).setAttribute("y2", hourPoint.y);
+                state.lastSecondValue = seconds;
+                state.lastMinuteValue = minutes;
+                state.frameId = window.requestAnimationFrame(update);
+            }
+
+            function mount(root) {
+                state.root = root;
+                root.innerHTML = render();
+                buildSharedScale();
+                buildHourSubdial();
+                update();
+            }
+
+            function unmount() {
+                if (state.frameId) {
+                    window.cancelAnimationFrame(state.frameId);
+                    state.frameId = null;
+                }
+
+                state.lastSecondValue = null;
+                state.lastMinuteValue = null;
+                state.secondReturnStart = null;
+                state.minuteReturnStart = null;
+                state.root = null;
+            }
+
+            return { mount, unmount };
+        }
+
         function createRotaryDialClockView() {
             const ids = {
                 hoursRing: "rotary-hours-ring",
@@ -1339,6 +1696,7 @@
 
         const TwentyFourHourClockView = createTwentyFourHourClockView();
         const RotaryDialClockView = createRotaryDialClockView();
+        const RetrogradeClockView = createRetrogradeClockView();
 
         const clockViews = [
             {
@@ -1348,6 +1706,10 @@
             {
                 title: "Rotary Dial Clock",
                 ...RotaryDialClockView
+            },
+            {
+                title: "Retrograde Clock",
+                ...RetrogradeClockView
             }
         ];
 
