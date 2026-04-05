@@ -561,6 +561,57 @@
             stroke-linecap: round;
         }
 
+        .binary-clock {
+            position: relative;
+            width: min(84vw, var(--clock-diameter));
+            aspect-ratio: 1;
+            margin: 0 auto;
+            display: grid;
+            place-items: center;
+        }
+
+        .binary-clock-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .binary-clock-dial {
+            fill: rgba(255, 255, 255, 0.03);
+            stroke: rgba(245, 245, 245, 0.14);
+            stroke-width: 1.2;
+        }
+
+        .binary-row-label {
+            fill: rgba(245, 245, 245, 0.76);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            text-anchor: middle;
+        }
+
+        .binary-bit-label {
+            fill: rgba(245, 245, 245, 0.44);
+            font-family: "Segoe UI", Arial, sans-serif;
+            font-size: 9px;
+            text-anchor: middle;
+        }
+
+        .binary-led {
+            fill: rgba(255, 255, 255, 0.06);
+            stroke: rgba(245, 245, 245, 0.12);
+            stroke-width: 1;
+            transition: fill 120ms ease, opacity 120ms ease;
+            opacity: 0.35;
+        }
+
+        .binary-led.is-on {
+            fill: rgba(244, 242, 236, 0.95);
+            stroke: rgba(255, 255, 255, 0.78);
+            opacity: 1;
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 16px;
@@ -592,7 +643,8 @@
             }
 
             .rotary-clock,
-            .retrograde-clock {
+            .retrograde-clock,
+            .binary-clock {
                 width: min(92vw, var(--clock-diameter));
             }
         }
@@ -1694,9 +1746,131 @@
             return { mount, unmount };
         }
 
+        function createBinaryClockView() {
+            const ids = {
+                hoursRow: "binary-hours-row",
+                minutesRow: "binary-minutes-row",
+                secondsRow: "binary-seconds-row"
+            };
+            const state = {
+                frameId: null,
+                root: null
+            };
+
+            const rowConfigs = [
+                { id: ids.hoursRow, label: "Hours", y: 126, values: [16, 8, 4, 2, 1], max: 23 },
+                { id: ids.minutesRow, label: "Minutes", y: 200, values: [32, 16, 8, 4, 2, 1], max: 59 },
+                { id: ids.secondsRow, label: "Seconds", y: 274, values: [32, 16, 8, 4, 2, 1], max: 59 }
+            ];
+
+            function query(id) {
+                return state.root ? state.root.querySelector(`#${id}`) : null;
+            }
+
+            function render() {
+                return `
+                    <div class="clock-wrapper">
+                        <div class="binary-clock">
+                            <svg class="binary-clock-svg" viewBox="0 0 ${CLOCK_GEOMETRY.size} ${CLOCK_GEOMETRY.size}" aria-hidden="true">
+                                <circle
+                                    class="binary-clock-dial"
+                                    cx="${CLOCK_GEOMETRY.center}"
+                                    cy="${CLOCK_GEOMETRY.center}"
+                                    r="${CLOCK_GEOMETRY.classicOuterRadius}"
+                                ></circle>
+                                <g id="${ids.hoursRow}"></g>
+                                <g id="${ids.minutesRow}"></g>
+                                <g id="${ids.secondsRow}"></g>
+                            </svg>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function buildRow(group, config) {
+                const ledSpacing = 34;
+                const startX = CLOCK_GEOMETRY.center - ((config.values.length - 1) * ledSpacing) / 2;
+
+                group.innerHTML = "";
+
+                const rowLabel = createSvgElement("text", {
+                    x: CLOCK_GEOMETRY.center,
+                    y: config.y - 24,
+                    class: "binary-row-label"
+                });
+                rowLabel.textContent = config.label;
+                group.appendChild(rowLabel);
+
+                config.values.forEach((bitValue, index) => {
+                    const x = startX + index * ledSpacing;
+                    const led = createSvgElement("circle", {
+                        cx: x,
+                        cy: config.y,
+                        r: 11,
+                        class: "binary-led",
+                        "data-led-value": bitValue
+                    });
+
+                    const bitLabel = createSvgElement("text", {
+                        x,
+                        y: config.y + 26,
+                        class: "binary-bit-label"
+                    });
+                    bitLabel.textContent = bitValue.toString();
+
+                    group.appendChild(led);
+                    group.appendChild(bitLabel);
+                });
+            }
+
+            function updateRow(group, value) {
+                const leds = group.querySelectorAll("[data-led-value]");
+
+                leds.forEach((led) => {
+                    const bitValue = Number(led.getAttribute("data-led-value"));
+                    led.classList.toggle("is-on", (value & bitValue) === bitValue);
+                });
+            }
+
+            function update() {
+                const now = new Date();
+                const hours = now.getHours();
+                const minutes = now.getMinutes();
+                const seconds = now.getSeconds();
+
+                updateRow(query(ids.hoursRow), hours);
+                updateRow(query(ids.minutesRow), minutes);
+                updateRow(query(ids.secondsRow), seconds);
+                state.frameId = window.requestAnimationFrame(update);
+            }
+
+            function mount(root) {
+                state.root = root;
+                root.innerHTML = render();
+
+                rowConfigs.forEach((config) => {
+                    buildRow(query(config.id), config);
+                });
+
+                update();
+            }
+
+            function unmount() {
+                if (state.frameId) {
+                    window.cancelAnimationFrame(state.frameId);
+                    state.frameId = null;
+                }
+
+                state.root = null;
+            }
+
+            return { mount, unmount };
+        }
+
         const TwentyFourHourClockView = createTwentyFourHourClockView();
         const RotaryDialClockView = createRotaryDialClockView();
         const RetrogradeClockView = createRetrogradeClockView();
+        const BinaryClockView = createBinaryClockView();
 
         const clockViews = [
             {
@@ -1710,6 +1884,10 @@
             {
                 title: "Retrograde Clock",
                 ...RetrogradeClockView
+            },
+            {
+                title: "Binary Clock",
+                ...BinaryClockView
             }
         ];
 
