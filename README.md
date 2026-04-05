@@ -1,7 +1,37 @@
-# Collection of ideas
+# Collection of Ideas
 
-Небольшой сборник моих веб-экспериментов, визуализаций и интерактивных мини-проектов на HTML, CSS и JS. В корне репозитория находится главная страница-каталог, которая собирает ссылки на все подпроекты.
+<p align="center">
+  Небольшая коллекция моих веб-экспериментов, визуализаций и интерактивных мини-проектов на <b>HTML</b>, <b>CSS</b> и <b>JavaScript</b>.
+</p>
 
-[![Open Website](https://img.shields.io/badge/Open-Website-0a0a0a?style=for-the-badge&logo=safari&logoColor=white)](https://muxoxum.github.io/Collection_of_ideas/)
+<p align="center">
+  <a href="https://muxoxum.github.io/Collection_of_ideas/">
+    <img src="https://img.shields.io/badge/Open-Website-0a0a0a?style=for-the-badge&logo=safari&logoColor=white" alt="Open Website">
+  </a>
+</p>
 
-Правила для структуры и оформления будущих проектов: [PROJECT_GUIDELINES.md](PROJECT_GUIDELINES.md)
+<p align="center">
+  <img src="https://img.shields.io/badge/Projects-7-1f1f1f?style=flat-square" alt="Projects 7">
+  <img src="https://img.shields.io/badge/Stack-HTML%20%7C%20CSS%20%7C%20JS-1f1f1f?style=flat-square" alt="Stack HTML CSS JS">
+  <img src="https://img.shields.io/badge/Format-Interactive%20Experiments-1f1f1f?style=flat-square" alt="Interactive Experiments">
+</p>
+
+## О проекте
+
+Этот репозиторий работает как живая витрина идей: в корне находится главная страница-каталог, а каждый подпроект хранится в собственной папке с отдельным `index.html` и `README.md`.
+
+## Структура
+
+```text
+Collection_of_ideas/
+├── index.html              # главная страница-каталог
+├── projects.json           # список проектов для витрины
+├── PROJECT_GUIDELINES.md   # правила для будущих проектов
+├── IDEAS.md                # заметки и идеи
+└── */                      # подпроекты с собственными README и index.html
+```
+
+## Как открыть
+
+1. Перейти на опубликованную версию: [muxoxum.github.io/Collection_of_ideas](https://muxoxum.github.io/Collection_of_ideas/)
+2. Или открыть репозиторий локально и запустить корневой `index.html` через локальный сервер
