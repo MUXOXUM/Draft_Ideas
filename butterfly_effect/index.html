@@ -10,16 +10,14 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #04131b;
-      --bg-deep: #01070b;
-      --panel: rgba(7, 24, 32, 0.84);
-      --panel-strong: rgba(5, 18, 25, 0.94);
-      --panel-border: rgba(114, 225, 255, 0.2);
-      --text: #edf9ff;
-      --muted: #8bb8c8;
-      --accent: #ffd166;
-      --cyan: #72e1ff;
-      --coral: #ff8f70;
+      --bg: #0b1014;
+      --panel: rgba(16, 22, 28, 0.88);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text: #f3f6f8;
+      --muted: #92a0ab;
+      --accent: #d8e7f2;
+      --cyan: #8ed6ec;
+      --coral: #f2a48d;
     }
 
     * {
@@ -29,11 +27,11 @@
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       color: var(--text);
       background:
-        linear-gradient(180deg, rgba(9, 28, 37, 0.35), transparent 34%),
-        linear-gradient(180deg, var(--bg), var(--bg-deep));
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 32%),
+        var(--bg);
       overflow: hidden;
     }
 
@@ -42,114 +40,102 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background:
-        linear-gradient(rgba(114, 225, 255, 0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(114, 225, 255, 0.05) 1px, transparent 1px);
-      background-size: 34px 34px;
-      mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
-      opacity: 0.24;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 26%);
+      opacity: 1;
     }
 
     .shell {
       position: relative;
       height: 100vh;
-      padding: 22px;
+      padding: 24px;
       display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 14px;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
+      gap: 16px;
       overflow: hidden;
     }
 
-    .topbar {
+    .sidebar {
       display: grid;
-      grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 420px);
-      gap: 14px;
-      align-items: stretch;
+      gap: 16px;
+      align-items: start;
+      align-content: start;
+      min-width: 0;
     }
 
     .hero,
     .controls,
     .plot-card {
       border: 1px solid var(--panel-border);
-      background: linear-gradient(180deg, var(--panel), var(--panel-strong));
-      backdrop-filter: blur(12px);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border-radius: 5px;
     }
 
     .hero {
-      padding: 16px 20px;
-    }
-
-    .eyebrow {
-      margin: 0 0 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.22em;
-      color: var(--cyan);
-      font-size: 0.76rem;
+      padding: 22px 24px;
     }
 
     h1 {
       margin: 0;
-      font-size: clamp(1.8rem, 4vw, 3.2rem);
-      line-height: 0.95;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+      font-size: clamp(1.7rem, 3vw, 2.5rem);
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: -0.04em;
     }
 
     .hero p {
-      margin: 8px 0 0;
-      max-width: 55ch;
+      margin: 10px 0 0;
+      max-width: 48ch;
       color: var(--muted);
-      line-height: 1.42;
-      font-size: 0.94rem;
+      line-height: 1.5;
+      font-size: 0.95rem;
     }
 
     .controls {
-      padding: 16px 18px;
+      padding: 18px;
       display: grid;
-      gap: 10px;
-      align-content: center;
+      gap: 12px;
+      align-content: start;
     }
 
     label {
-      font-size: 0.8rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--cyan);
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      color: var(--muted);
     }
 
     .field-row {
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
     }
 
     input {
       width: 100%;
-      padding: 11px 14px;
-      border: 1px solid rgba(114, 225, 255, 0.22);
-      background: rgba(3, 12, 18, 0.92);
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(4, 8, 12, 0.42);
       color: var(--text);
       font: inherit;
       font-size: 0.98rem;
       outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
     }
 
     input:focus {
-      border-color: rgba(255, 209, 102, 0.72);
-      box-shadow: none;
+      border-color: rgba(216, 231, 242, 0.42);
+      background: rgba(4, 8, 12, 0.62);
     }
 
     .unit {
-      padding: 10px 12px;
+      padding: 11px 12px;
       color: var(--accent);
-      border: 1px solid rgba(255, 209, 102, 0.25);
-      background: rgba(255, 209, 102, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
       min-width: 60px;
       text-align: center;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .hint,
@@ -161,13 +147,14 @@
 
     .stats {
       display: grid;
-      gap: 4px;
+      gap: 6px;
+      padding-top: 2px;
     }
 
     .seed-line {
-      font-size: 0.88rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
+      font-size: 0.87rem;
+      font-weight: 500;
+      letter-spacing: 0;
     }
 
     .seed-line.base {
@@ -185,10 +172,10 @@
     }
 
     .plot-card {
-      padding: 16px;
+      padding: 14px;
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
-      gap: 12px;
+      gap: 10px;
       min-height: 0;
       height: 100%;
       overflow: hidden;
@@ -198,14 +185,15 @@
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 16px;
+      gap: 12px;
+      padding: 2px 4px 0;
     }
 
     .plot-title {
       margin: 0;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+      font-size: 0.95rem;
+      font-weight: 500;
       color: var(--text);
     }
 
@@ -219,9 +207,9 @@
       height: 100%;
       min-height: 0;
       display: block;
-      border: 1px solid rgba(114, 225, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       background:
-        linear-gradient(180deg, rgba(0, 10, 16, 0.9), rgba(3, 11, 17, 0.98));
+        linear-gradient(180deg, rgba(8, 12, 16, 0.9), rgba(5, 8, 12, 0.98));
       cursor: grab;
     }
 
@@ -231,8 +219,9 @@
 
     .caption {
       color: var(--muted);
-      font-size: 0.92rem;
+      font-size: 0.84rem;
       line-height: 1.45;
+      padding: 0 4px 2px;
     }
 
     @media (max-width: 980px) {
@@ -244,11 +233,11 @@
         height: auto;
         min-height: 100vh;
         overflow: visible;
+        grid-template-columns: 1fr;
       }
 
-      .topbar,
-      .visuals {
-        grid-template-columns: 1fr;
+      .shell {
+        padding: 16px;
       }
 
       canvas {
@@ -259,12 +248,21 @@
 </head>
 <body>
   <main class="shell">
-    <section class="topbar">
+    <section class="visuals">
+      <article class="plot-card">
+        <div class="plot-head">
+          <h2 class="plot-title">Trajectory View</h2>
+        </div>
+        <canvas id="canvasPlane"></canvas>
+        <div class="caption">ЛКМ вращает, ПКМ или Shift + ЛКМ сдвигают, колесо меняет масштаб, двойной клик сбрасывает вид.</div>
+      </article>
+    </section>
+
+    <section class="sidebar">
       <div class="hero">
         <h1>Butterfly Effect</h1>
         <p>
-          Две системы Лоренца стартуют в почти одинаковых условиях, но крошечное отличие в начальном
-          значении постепенно превращается в заметное отклонение траекторий.
+          Две почти одинаковые системы Лоренца со временем расходятся из-за едва заметной разницы в старте.
         </p>
       </div>
 
@@ -280,16 +278,6 @@
         </div>
       </div>
     </section>
-
-    <section class="visuals">
-      <article class="plot-card">
-        <div class="plot-head">
-          <h2 class="plot-title">Shared View</h2>
-        </div>
-        <canvas id="canvasPlane"></canvas>
-        <div class="caption">LMB вращает камеру, RMB или MMB панорамируют, колесо приближает, двойной клик LMB сбрасывает вид.</div>
-      </article>
-    </section>
   </main>
 
   <script>
@@ -301,8 +289,8 @@
     const MAX_POINTS = 2200;
     const BASE_STATE = { x: 0.01, y: 1, z: 1.05 };
     const DEFAULT_VIEW = {
-      zoom: 540,
-      distance: 82,
+      zoom: 800,
+      distance: 64,
       yaw: -0.7,
       pitch: 0.42,
       target: { x: 0, y: 0, z: 24 }
@@ -434,15 +422,15 @@
     }
 
     function drawAxes(ctx, width, height) {
-      ctx.strokeStyle = "rgba(114, 225, 255, 0.08)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
       ctx.lineWidth = 1;
-      for (let x = 32.5; x < width; x += 34) {
+      for (let x = 48.5; x < width; x += 48) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
         ctx.lineTo(x, height);
         ctx.stroke();
       }
-      for (let y = 24.5; y < height; y += 34) {
+      for (let y = 48.5; y < height; y += 48) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(width, y);
@@ -456,7 +444,7 @@
       const height = canvas.clientHeight;
 
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "rgba(3, 11, 17, 1)";
+      ctx.fillStyle = "rgba(5, 8, 12, 1)";
       ctx.fillRect(0, 0, width, height);
       drawAxes(ctx, width, height);
 
