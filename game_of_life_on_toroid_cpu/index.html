@@ -122,27 +122,49 @@
     const canvas = document.getElementById("scene");
     const ctx = canvas.getContext("2d");
 
-    const majorSegments = 72;
-    const minorSegments = 40;
+    const GRID = {
+      majorSegments: 72,
+      minorSegments: 40
+    };
+
+    const SCENE_BASE = {
+      majorRadius: 182,
+      minorRadius: 80,
+      cameraDistance: 640,
+      projectionScale: 760
+    };
+
+    const SIMULATION = {
+      stepMs: 800,
+      autoRotationSpeed: { x: 0.00009, y: 0.00013, z: 0.00007 }
+    };
+
+    const INTERACTION = {
+      arcballSmoothing: 0.012,
+      arcballSensitivity: 1.65,
+      panSensitivity: 1,
+      zoomStep: 0.0012,
+      minZoom: 0.55,
+      maxZoom: 2.4
+    };
+
+    const VISUALS = {
+      lightDirection: normalize({ x: -0.45, y: -0.9, z: 1 }),
+      aliveBaseColor: [171, 255, 128],
+      deadBaseColor: [143, 155, 130],
+      aliveStroke: "rgba(234, 255, 153, 0.34)",
+      deadStroke: "rgba(170, 196, 159, 0.14)"
+    };
+
+    const POINTER_MODE = {
+      PAN: "pan",
+      ROTATE: "rotate"
+    };
+
+    const majorSegments = GRID.majorSegments;
+    const minorSegments = GRID.minorSegments;
     const vertexCount = majorSegments * minorSegments;
     const cellCount = vertexCount;
-    const baseMajorRadius = 182;
-    const baseMinorRadius = 80;
-    const baseCameraDistance = 640;
-    const baseProjectionScale = 760;
-    const simStepMs = 800;
-    const autoRotationSpeed = { x: 0.00009, y: 0.00013, z: 0.00007 };
-    const arcballSmoothing = 0.012;
-    const arcballSensitivity = 1.65;
-    const panSensitivity = 1;
-    const zoomStep = 0.0012;
-    const minZoom = 0.55;
-    const maxZoom = 2.4;
-    const lightDirection = normalize({ x: -0.45, y: -0.9, z: 1 });
-    const aliveBaseColor = [171, 255, 128];
-    const deadBaseColor = [143, 155, 130];
-    const aliveStroke = "rgba(234, 255, 153, 0.34)";
-    const deadStroke = "rgba(170, 196, 159, 0.14)";
     const initialViewQuaternion = quaternionFromEuler({ x: -0.78, y: 0.3, z: 0 });
 
     const majorCos = new Float32Array(majorSegments);
@@ -158,51 +180,65 @@
     const prevMinorIndex = new Uint16Array(minorSegments);
     const nextMinorIndex = new Uint16Array(minorSegments);
 
+    const tempBuildPoint = { x: 0, y: 0, z: 0 };
+    const tempBuildNormal = { x: 0, y: 0, z: 0 };
+
     const cellTemplates = createCellTemplates();
     const renderCells = createRenderCells();
-
-    const state = {
-      width: 0,
-      height: 0,
-      centerX: 0,
-      centerY: 0,
-      viewQuaternion: initialViewQuaternion,
-      targetViewQuaternion: initialViewQuaternion,
-      spinRotation: { x: 0, y: 0, z: 0.18 },
-      spinTransform: { cx: 1, sx: 0, cy: 1, sy: 0, cz: 1, sz: 0 },
-      autoRotation: { ...autoRotationSpeed },
-      running: true,
-      dragging: false,
-      dragMode: null,
-      lastArcballVector: { x: 0, y: 0, z: 1 },
-      lastPointer: { x: 0, y: 0 },
-      panOffset: { x: 0, y: 0 },
-      zoom: 1,
-      generation: 0,
-      accumulator: 0,
-      grid: new Uint8Array(cellCount),
-      nextGrid: new Uint8Array(cellCount),
-      sceneMetrics: {
-        majorRadius: baseMajorRadius,
-        minorRadius: baseMinorRadius,
-        cameraDistance: baseCameraDistance,
-        projectionScale: baseProjectionScale
-      },
-      geometry: {
-        vertices: new Float32Array(vertexCount * 3),
-        normals: new Float32Array(cellCount * 3)
-      },
-      backgroundGradient: null,
-      arcballBounds: {
-        left: 0,
-        top: 0,
-        centerX: 0,
-        centerY: 0,
-        radius: 1
-      }
-    };
+    const state = createInitialState();
 
     initializeLookupTables();
+
+    function createInitialState() {
+      return {
+        width: 0,
+        height: 0,
+        centerX: 0,
+        centerY: 0,
+        viewQuaternion: initialViewQuaternion,
+        targetViewQuaternion: initialViewQuaternion,
+        spinRotation: { x: 0, y: 0, z: 0.18 },
+        spinTransform: { cx: 1, sx: 0, cy: 1, sy: 0, cz: 1, sz: 0 },
+        autoRotation: { ...SIMULATION.autoRotationSpeed },
+        running: true,
+        dragging: false,
+        dragMode: null,
+        lastArcballVector: { x: 0, y: 0, z: 1 },
+        lastPointer: { x: 0, y: 0 },
+        panOffset: { x: 0, y: 0 },
+        zoom: 1,
+        generation: 0,
+        accumulator: 0,
+        grid: new Uint8Array(cellCount),
+        nextGrid: new Uint8Array(cellCount),
+        sceneMetrics: createSceneMetrics(),
+        geometry: createGeometryBuffers(),
+        backgroundGradient: null,
+        arcballBounds: {
+          left: 0,
+          top: 0,
+          centerX: 0,
+          centerY: 0,
+          radius: 1
+        }
+      };
+    }
+
+    function createSceneMetrics() {
+      return {
+        majorRadius: SCENE_BASE.majorRadius,
+        minorRadius: SCENE_BASE.minorRadius,
+        cameraDistance: SCENE_BASE.cameraDistance,
+        projectionScale: SCENE_BASE.projectionScale
+      };
+    }
+
+    function createGeometryBuffers() {
+      return {
+        vertices: new Float32Array(vertexCount * 3),
+        normals: new Float32Array(cellCount * 3)
+      };
+    }
 
     function initializeLookupTables() {
       const fullTurn = Math.PI * 2;
@@ -266,7 +302,7 @@
           { x: 0, y: 0, depth: 0 }
         ],
         fill: "",
-        stroke: deadStroke,
+        stroke: VISUALS.deadStroke,
         lineWidth: 0.75,
         depth: 0
       }));
@@ -278,12 +314,21 @@
       }
     }
 
-    function randomizeGrid() {
-      fillGrid(state.grid, true);
+    function resetSimulation(randomize = true) {
+      fillGrid(state.grid, randomize);
       fillGrid(state.nextGrid, false);
       state.generation = 0;
+      state.accumulator = 0;
       state.running = true;
-      state.autoRotation = { ...autoRotationSpeed };
+      state.autoRotation = { ...SIMULATION.autoRotationSpeed };
+    }
+
+    function resetViewTransform() {
+      state.targetViewQuaternion = initialViewQuaternion;
+      state.viewQuaternion = initialViewQuaternion;
+      state.panOffset.x = 0;
+      state.panOffset.y = 0;
+      state.zoom = 1;
     }
 
     function clamp(value, min, max) {
@@ -380,10 +425,10 @@
       state.centerX = rect.width * 0.5;
       state.centerY = rect.height * 0.5;
       state.sceneMetrics = {
-        majorRadius: baseMajorRadius * (isPortrait ? scale * 0.9 : scale),
-        minorRadius: baseMinorRadius * (isPortrait ? scale * 0.92 : scale),
-        cameraDistance: baseCameraDistance * (isPortrait ? 0.95 : 1),
-        projectionScale: baseProjectionScale * (isPortrait ? scale * 0.82 : scale)
+        majorRadius: SCENE_BASE.majorRadius * (isPortrait ? scale * 0.9 : scale),
+        minorRadius: SCENE_BASE.minorRadius * (isPortrait ? scale * 0.92 : scale),
+        cameraDistance: SCENE_BASE.cameraDistance * (isPortrait ? 0.95 : 1),
+        projectionScale: SCENE_BASE.projectionScale * (isPortrait ? scale * 0.82 : scale)
       };
 
       canvas.width = Math.round(rect.width * ratio);
@@ -462,13 +507,13 @@
         return quaternionFromAxisAngle(fallbackAxis, Math.PI);
       }
 
-      return quaternionFromAxisAngle(
+        return quaternionFromAxisAngle(
         {
           x: axis.x / axisLength,
           y: axis.y / axisLength,
           z: axis.z / axisLength
         },
-        Math.acos(alignment) * arcballSensitivity
+        Math.acos(alignment) * INTERACTION.arcballSensitivity
       );
     }
 
@@ -586,7 +631,7 @@
     }
 
     function shadeColor(base, intensity) {
-      const mix = Math.max(0, Math.min(1, intensity));
+      const mix = clamp(intensity, 0, 1);
       const r = Math.round(base[0] * mix);
       const g = Math.round(base[1] * mix);
       const b = Math.round(base[2] * mix);
@@ -608,8 +653,6 @@
     }
 
     function buildCells() {
-      const transformedPoint = { x: 0, y: 0, z: 0 };
-      const transformedNormal = { x: 0, y: 0, z: 0 };
       const vertices = state.geometry.vertices;
       const normals = state.geometry.normals;
       const cells = renderCells;
@@ -628,9 +671,9 @@
             vertices[vertexOffset],
             vertices[vertexOffset + 1],
             vertices[vertexOffset + 2],
-            transformedPoint
+            tempBuildPoint
           );
-          projectTransformedPoint(transformedPoint, points[pointIndex]);
+          projectTransformedPoint(tempBuildPoint, points[pointIndex]);
           depthSum += points[pointIndex].depth;
         }
 
@@ -639,20 +682,20 @@
           normals[normalOffset],
           normals[normalOffset + 1],
           normals[normalOffset + 2],
-          transformedNormal
+          tempBuildNormal
         );
 
         const lightness = Math.max(
           0.12,
-          transformedNormal.x * lightDirection.x +
-            transformedNormal.y * lightDirection.y +
-            transformedNormal.z * lightDirection.z
+          tempBuildNormal.x * VISUALS.lightDirection.x +
+            tempBuildNormal.y * VISUALS.lightDirection.y +
+            tempBuildNormal.z * VISUALS.lightDirection.z
         );
         const alive = grid[template.gridIndex] === 1;
         const mix = 0.65 + lightness * 0.5;
 
-        cell.fill = shadeColor(alive ? aliveBaseColor : deadBaseColor, mix);
-        cell.stroke = alive ? aliveStroke : deadStroke;
+        cell.fill = shadeColor(alive ? VISUALS.aliveBaseColor : VISUALS.deadBaseColor, mix);
+        cell.stroke = alive ? VISUALS.aliveStroke : VISUALS.deadStroke;
         cell.lineWidth = alive ? 1.15 : 0.75;
         cell.depth = depthSum * 0.25;
       }
@@ -678,7 +721,7 @@
     }
 
     function tick(deltaMs) {
-      const smoothing = 1 - Math.exp(-arcballSmoothing * deltaMs);
+      const smoothing = 1 - Math.exp(-INTERACTION.arcballSmoothing * deltaMs);
       state.viewQuaternion = slerpQuaternions(state.viewQuaternion, state.targetViewQuaternion, smoothing);
 
       if (state.running) {
@@ -687,8 +730,8 @@
         state.spinRotation.z += state.autoRotation.z * deltaMs;
         state.accumulator += deltaMs;
 
-        while (state.accumulator >= simStepMs) {
-          state.accumulator -= simStepMs;
+        while (state.accumulator >= SIMULATION.stepMs) {
+          state.accumulator -= SIMULATION.stepMs;
           nextGeneration();
         }
       }
@@ -705,31 +748,53 @@
       requestAnimationFrame(frame);
     }
 
-    canvas.addEventListener("pointerdown", (event) => {
+    function beginPan(event) {
+      state.dragMode = POINTER_MODE.PAN;
+      state.lastPointer.x = event.clientX;
+      state.lastPointer.y = event.clientY;
+    }
+
+    function beginRotate(event) {
+      state.dragMode = POINTER_MODE.ROTATE;
+      state.lastArcballVector = projectPointerToArcball(event);
+    }
+
+    function startDragging(pointerId) {
+      state.dragging = true;
+      canvas.classList.add("dragging");
+      canvas.setPointerCapture(pointerId);
+    }
+
+    function stopDragging(event) {
+      state.dragging = false;
+      state.dragMode = null;
+      canvas.classList.remove("dragging");
+
+      if (event) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    function handlePointerDown(event) {
       updateArcballBounds(canvas.getBoundingClientRect());
 
       if (event.button === 2 || event.button === 1) {
-        state.dragMode = "pan";
-        state.lastPointer.x = event.clientX;
-        state.lastPointer.y = event.clientY;
+        beginPan(event);
       } else {
-        state.dragMode = "rotate";
-        state.lastArcballVector = projectPointerToArcball(event);
+        beginRotate(event);
       }
 
-      state.dragging = true;
-      canvas.classList.add("dragging");
-      canvas.setPointerCapture(event.pointerId);
-    });
+      startDragging(event.pointerId);
+    }
 
-    canvas.addEventListener("pointermove", (event) => {
+    function handlePointerMove(event) {
       if (!state.dragging) {
         return;
       }
 
-      if (state.dragMode === "pan") {
-        state.panOffset.x += (event.clientX - state.lastPointer.x) * panSensitivity;
-        state.panOffset.y += (event.clientY - state.lastPointer.y) * panSensitivity;
+      if (state.dragMode === POINTER_MODE.PAN) {
+        state.panOffset.x += (event.clientX - state.lastPointer.x) * INTERACTION.panSensitivity;
+        state.panOffset.y += (event.clientY - state.lastPointer.y) * INTERACTION.panSensitivity;
         state.lastPointer.x = event.clientX;
         state.lastPointer.y = event.clientY;
         return;
@@ -739,46 +804,51 @@
       const deltaQuaternion = quaternionBetweenVectors(state.lastArcballVector, currentArcballVector);
       state.targetViewQuaternion = multiplyQuaternions(deltaQuaternion, state.targetViewQuaternion);
       state.lastArcballVector = currentArcballVector;
-    });
-
-    function stopDragging(event) {
-      state.dragging = false;
-      state.dragMode = null;
-      canvas.classList.remove("dragging");
-      if (event) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
     }
 
-    canvas.addEventListener("pointerup", stopDragging);
-    canvas.addEventListener("pointerleave", () => {
-      state.dragging = false;
-      state.dragMode = null;
-      canvas.classList.remove("dragging");
-    });
-    canvas.addEventListener("pointercancel", stopDragging);
-    canvas.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-    });
-    canvas.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      state.zoom = clamp(state.zoom * Math.exp(-event.deltaY * zoomStep), minZoom, maxZoom);
-    }, { passive: false });
-    canvas.addEventListener("dblclick", () => {
-      state.targetViewQuaternion = initialViewQuaternion;
-      state.viewQuaternion = initialViewQuaternion;
-      state.panOffset.x = 0;
-      state.panOffset.y = 0;
-      state.zoom = 1;
-    });
+    function handlePointerLeave() {
+      stopDragging();
+    }
 
-    window.addEventListener("resize", resize);
+    function handleContextMenu(event) {
+      event.preventDefault();
+    }
 
-    randomizeGrid();
-    resize();
-    updateSpinTransform();
-    render();
-    requestAnimationFrame(frame);
+    function handleWheel(event) {
+      event.preventDefault();
+      state.zoom = clamp(
+        state.zoom * Math.exp(-event.deltaY * INTERACTION.zoomStep),
+        INTERACTION.minZoom,
+        INTERACTION.maxZoom
+      );
+    }
+
+    function handleDoubleClick() {
+      resetViewTransform();
+    }
+
+    function attachEventListeners() {
+      canvas.addEventListener("pointerdown", handlePointerDown);
+      canvas.addEventListener("pointermove", handlePointerMove);
+      canvas.addEventListener("pointerup", stopDragging);
+      canvas.addEventListener("pointerleave", handlePointerLeave);
+      canvas.addEventListener("pointercancel", stopDragging);
+      canvas.addEventListener("contextmenu", handleContextMenu);
+      canvas.addEventListener("wheel", handleWheel, { passive: false });
+      canvas.addEventListener("dblclick", handleDoubleClick);
+      window.addEventListener("resize", resize);
+    }
+
+    function initialize() {
+      resetSimulation(true);
+      resize();
+      updateSpinTransform();
+      render();
+      attachEventListeners();
+      requestAnimationFrame(frame);
+    }
+
+    initialize();
   </script>
 </body>
 </html>

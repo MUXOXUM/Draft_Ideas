@@ -1,0 +1,94 @@
+:root {
+  color-scheme: dark;
+  --bg: #101010;
+  --label: rgba(245, 245, 245, 0.92);
+  --hint: rgba(190, 190, 190, 0.72);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+body {
+  display: grid;
+  place-items: center;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background: var(--bg);
+}
+
+body.camera-mode canvas {
+  cursor: grab;
+}
+
+body.camera-mode.is-dragging canvas {
+  cursor: grabbing;
+}
+
+.attractor-label {
+  position: fixed;
+  left: 24px;
+  bottom: 22px;
+  z-index: 1;
+  pointer-events: none;
+  color: var(--label);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+}
+
+.attractor-label__title {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.attractor-label__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--hint);
+}
+
+.camera-mode-panel {
+  position: fixed;
+  top: 22px;
+  left: 24px;
+  z-index: 1;
+  display: none;
+  max-width: min(320px, calc(100vw - 48px));
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 10, 0.72);
+  color: rgba(245, 245, 245, 0.92);
+  font-size: 12px;
+  line-height: 1.45;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(10px);
+}
+
+.camera-mode-panel.is-visible {
+  display: block;
+}
+
+.camera-mode-panel p {
+  margin: 0;
+}
+
+.camera-mode-panel p + p {
+  margin-top: 6px;
+  color: var(--hint);
+}

@@ -1,0 +1,676 @@
+:root {
+    color-scheme: dark;
+    --bg-top: #111214;
+    --bg-bottom: #646368;
+    --panel: rgba(20, 20, 22, 0.9);
+    --panel-strong: rgba(15, 15, 17, 0.96);
+    --border: rgba(255, 255, 255, 0.14);
+    --text: #f4f2ec;
+    --muted: rgba(244, 242, 236, 0.68);
+    --label: rgba(245, 245, 245, 0.92);
+    --hint: rgba(190, 190, 190, 0.72);
+    --accent: #76757a;
+    --accent-hover: #8b8a90;
+    --shadow: rgba(0, 0, 0, 0.4);
+    --clock-diameter: 650px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 28%),
+        linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+}
+
+.stage {
+    width: 100%;
+    min-height: calc(100vh - 48px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.clock-view {
+    width: min(860px, 100%);
+    padding: 36px;
+}
+
+.clock-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+}
+
+.clock-container {
+    width: 100%;
+    max-width: var(--clock-diameter);
+    margin: 0 auto;
+    position: relative;
+}
+
+.clock-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible;
+}
+
+.metal-ring {
+    stroke: none;
+    fill: none;
+}
+
+.day-section {
+    fill: rgba(245, 245, 245, 0.08);
+    stroke: none;
+}
+
+.night-section {
+    fill: rgba(8, 10, 18, 0.28);
+    stroke: none;
+}
+
+.hour-hand {
+    stroke: rgba(245, 245, 245, 0.94);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+
+.second-hand {
+    stroke: rgba(245, 245, 245, 0.42);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+}
+
+.hour-hand-night {
+    stroke: rgba(245, 245, 245, 0.94);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+}
+
+.center-circle {
+    fill: rgba(245, 245, 245, 0.92);
+    stroke: none;
+}
+
+.marker {
+    stroke: rgba(245, 245, 245, 0.2);
+    stroke-width: 1.8;
+    stroke-linecap: butt;
+}
+
+.marker-number,
+.marker-number-night {
+    font-size: 12px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.marker-number {
+    fill: rgba(245, 245, 245, 0.78);
+}
+
+.marker-night {
+    stroke: rgba(245, 245, 245, 0.12);
+    stroke-width: 1.8;
+    stroke-linecap: butt;
+}
+
+.marker-minute {
+    stroke: rgba(245, 245, 245, 0.18);
+    stroke-linecap: butt;
+    stroke-width: 0.8;
+}
+
+.marker-minute--five {
+    stroke-width: 1.2;
+}
+
+.marker-minute--quarter {
+    stroke-width: 1.4;
+}
+
+.marker-minute-night {
+    stroke: rgba(245, 245, 245, 0.1);
+    stroke-linecap: butt;
+    stroke-width: 0.8;
+}
+
+.marker-minute-night.marker-minute--five {
+    stroke-width: 1.2;
+}
+
+.marker-minute-night.marker-minute--quarter {
+    stroke-width: 1.4;
+}
+
+.seconds-subdial {
+    fill: rgba(255, 255, 255, 0.02);
+    stroke: rgba(245, 245, 245, 0.12);
+    stroke-width: 0.8;
+}
+
+.seconds-subdial-tick {
+    stroke: rgba(245, 245, 245, 0.34);
+    stroke-width: 0.9;
+    stroke-linecap: round;
+}
+
+.seconds-subdial-tick--major {
+    stroke: rgba(245, 245, 245, 0.58);
+    stroke-width: 1.5;
+}
+
+.seconds-subdial-label {
+    fill: rgba(245, 245, 245, 0.72);
+    font-size: 8px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.seconds-subdial-hand {
+    stroke: rgba(245, 245, 245, 0.46);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+}
+
+.seconds-subdial-center {
+    fill: rgba(245, 245, 245, 0.9);
+}
+
+.marker-number-night {
+    fill: rgba(245, 245, 245, 0.78);
+}
+
+.clock-caption {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    z-index: 5;
+    padding: 0;
+    max-width: min(420px, calc(100vw - 48px));
+    pointer-events: none;
+    color: var(--label);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+}
+
+.clock-caption-title {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+}
+
+.clock-caption-hint {
+    margin: 6px 0 0;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--hint);
+}
+
+.map-overlay[hidden] {
+    display: none;
+}
+
+.map-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    background: transparent;
+    backdrop-filter: none;
+}
+
+.map-panel {
+    width: min(760px, 100%);
+    padding: 18px 18px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    background: rgba(16, 18, 24, 0.96);
+    box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+}
+
+.map-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.map-panel-title {
+    margin: 0;
+    font-size: 0.98rem;
+    letter-spacing: 0.04em;
+    color: var(--label);
+}
+
+.map-panel-copy {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.map-close-button {
+    border: 0;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.map-close-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.map-surface {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+}
+
+.map-surface .leaflet-container {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: transparent;
+}
+
+.map-surface .leaflet-control-zoom a {
+    background: rgba(18, 20, 26, 0.92);
+    color: var(--text);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.map-surface .leaflet-control-zoom {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+.map-surface .leaflet-control-attribution {
+    background: rgba(15, 17, 22, 0.76);
+    color: rgba(244, 242, 236, 0.7);
+    font-size: 10px;
+}
+
+.map-surface .leaflet-control-attribution a {
+    color: rgba(244, 242, 236, 0.84);
+}
+
+.map-surface--fallback {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.map-marker {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: #f5f5f5;
+    border: 2px solid rgba(8, 10, 18, 0.6);
+    box-shadow: 0 0 0 5px rgba(245, 245, 245, 0.18);
+}
+
+.map-coordinates {
+    margin: 12px 2px 0;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--hint);
+}
+
+.rotary-clock {
+    position: relative;
+    width: min(84vw, var(--clock-diameter));
+    aspect-ratio: 1;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+.rotary-clock-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.rotary-pointer {
+    position: absolute;
+    top: 2.4%;
+    left: 50%;
+    width: 0;
+    height: 47.6%;
+    transform: translateX(-50%);
+    z-index: 4;
+    pointer-events: none;
+}
+
+.rotary-pointer::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 100%;
+    border-left: 3px solid rgba(245, 245, 245, 0.94);
+}
+
+.rotary-pointer::after {
+    content: none;
+}
+
+.rotary-track {
+    fill: none;
+    stroke: rgba(245, 245, 245, 0.2);
+    stroke-width: 1;
+}
+
+.rotary-track--minutes,
+.rotary-track--seconds {
+    stroke: rgba(245, 245, 245, 0.12);
+}
+
+.rotary-tick {
+    stroke: rgba(245, 245, 245, 0.82);
+    stroke-linecap: round;
+}
+
+.rotary-tick--hours {
+    stroke-width: 1.8;
+}
+
+.rotary-tick--minutes,
+.rotary-tick--seconds {
+    stroke: rgba(245, 245, 245, 0.62);
+    stroke-width: 1.3;
+}
+
+.rotary-tick--minor {
+    stroke: rgba(245, 245, 245, 0.32);
+    stroke-width: 0.9;
+}
+
+.rotary-text {
+    fill: rgba(245, 245, 245, 0.94);
+    font-family: "Segoe UI", Arial, sans-serif;
+    text-anchor: middle;
+    dominant-baseline: middle;
+    user-select: none;
+}
+
+.rotary-text--hours {
+    letter-spacing: 0.08em;
+}
+
+.rotary-text--minutes,
+.rotary-text--seconds {
+    letter-spacing: 0.04em;
+    fill: rgba(245, 245, 245, 0.74);
+}
+
+.rotary-center-dot {
+    fill: rgba(245, 245, 245, 0.92);
+}
+
+.retrograde-clock {
+    position: relative;
+    width: min(84vw, var(--clock-diameter));
+    aspect-ratio: 1;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+.retrograde-clock-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.retrograde-dial {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(245, 245, 245, 0.14);
+    stroke-width: 1.2;
+}
+
+.retrograde-arc {
+    fill: none;
+    stroke: rgba(245, 245, 245, 0.16);
+    stroke-width: 1.4;
+}
+
+.retrograde-tick {
+    stroke: rgba(245, 245, 245, 0.35);
+    stroke-width: 1.1;
+    stroke-linecap: round;
+}
+
+.retrograde-tick--major {
+    stroke: rgba(245, 245, 245, 0.82);
+    stroke-width: 2;
+}
+
+.retrograde-label {
+    fill: rgba(245, 245, 245, 0.86);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.retrograde-label-caption {
+    fill: rgba(245, 245, 245, 0.42);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-anchor: middle;
+}
+
+.retrograde-hand {
+    stroke-linecap: round;
+}
+
+.retrograde-hand--minute {
+    stroke: rgba(245, 245, 245, 0.92);
+    stroke-width: 3.2;
+}
+
+.retrograde-hand--second {
+    stroke: rgba(245, 245, 245, 0.56);
+    stroke-width: 2;
+}
+
+.retrograde-center-dot,
+.hour-subdial-center-dot {
+    fill: rgba(245, 245, 245, 0.92);
+}
+
+.hour-subdial {
+    fill: rgba(255, 255, 255, 0.02);
+    stroke: rgba(245, 245, 245, 0.14);
+    stroke-width: 1;
+}
+
+.hour-subdial-label {
+    fill: rgba(245, 245, 245, 0.84);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 12px;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.hour-subdial-hand {
+    stroke: rgba(245, 245, 245, 0.94);
+    stroke-width: 2.8;
+    stroke-linecap: round;
+}
+
+.binary-clock {
+    position: relative;
+    width: min(84vw, var(--clock-diameter));
+    aspect-ratio: 1;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+.binary-clock-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.binary-clock-dial {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(245, 245, 245, 0.14);
+    stroke-width: 1.2;
+}
+
+.binary-row-label {
+    fill: rgba(245, 245, 245, 0.76);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-anchor: middle;
+}
+
+.binary-bit-label {
+    fill: rgba(245, 245, 245, 0.44);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 9px;
+    text-anchor: middle;
+}
+
+.binary-led {
+    fill: rgba(255, 255, 255, 0.06);
+    stroke: rgba(245, 245, 245, 0.12);
+    stroke-width: 1;
+    transition: fill 120ms ease, opacity 120ms ease;
+    opacity: 0.35;
+}
+
+.binary-led.is-on {
+    fill: rgba(244, 242, 236, 0.95);
+    stroke: rgba(255, 255, 255, 0.78);
+    opacity: 1;
+}
+
+.combined-clock {
+    position: relative;
+    width: min(84vw, var(--clock-diameter));
+    aspect-ratio: 1;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+}
+
+.combined-clock-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.combined-clock-dial {
+    fill: rgba(255, 255, 255, 0.03);
+    stroke: rgba(245, 245, 245, 0.14);
+    stroke-width: 1.2;
+}
+
+.combined-orbit {
+    fill: none;
+    stroke: rgba(245, 245, 245, 0.16);
+    stroke-width: 0.9;
+}
+
+.combined-badge {
+    transition: none;
+}
+
+.combined-badge-circle {
+    fill: rgba(244, 242, 236, 0.94);
+    stroke: rgba(255, 255, 255, 0.62);
+    stroke-width: 1;
+}
+
+.combined-badge-text {
+    fill: rgba(18, 19, 22, 0.92);
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+@media (max-width: 720px) {
+    body {
+        padding: 16px;
+    }
+
+    .stage {
+        min-height: calc(100vh - 32px);
+    }
+
+    .clock-view {
+        padding: 24px 18px 140px;
+        border-radius: 28px;
+    }
+
+    .clock-caption {
+        left: 16px;
+        right: 16px;
+        bottom: 16px;
+        max-width: none;
+    }
+
+    .map-overlay {
+        padding: 14px;
+    }
+
+    .map-panel {
+        padding: 14px;
+        border-radius: 20px;
+    }
+
+    .rotary-clock,
+    .retrograde-clock,
+    .binary-clock,
+    .combined-clock {
+        width: min(92vw, var(--clock-diameter));
+    }
+}

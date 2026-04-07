@@ -12,14 +12,7 @@
       color-scheme: dark;
       --bg: #071108;
       --bg-deep: #030704;
-      --panel: rgba(5, 16, 7, 0.9);
-      --panel-border: rgba(111, 255, 145, 0.25);
       --text: #9affb0;
-      --muted: #5da86a;
-      --accent: #d4ff63;
-      --accent-strong: #7cff98;
-      --glass: rgba(13, 31, 15, 0.82);
-      --shadow: rgba(60, 255, 110, 0.12);
     }
 
     * {
@@ -67,8 +60,7 @@
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background:
-        radial-gradient(circle at center, transparent 58%, rgba(0, 0, 0, 0.38) 100%);
+      background: radial-gradient(circle at center, transparent 58%, rgba(0, 0, 0, 0.38) 100%);
     }
 
     .scene {
@@ -110,7 +102,6 @@
         background-size: 24px 24px;
       }
     }
-
   </style>
 </head>
 <body>
@@ -131,197 +122,257 @@
       throw new Error("WebGL is not supported in this browser.");
     }
 
-    const majorSegments = 2000;
-    const minorSegments = 700;
-    const cellCount = majorSegments * minorSegments;
-    const verticesPerCell = 6;
-    const floatsPerVertex = 10;
-    const baseMajorRadius = 182;
-    const baseMinorRadius = 80;
-    const baseCameraDistance = 640;
-    const baseProjectionScale = 760;
-    const simStepMs = 100;
-    const autoRotationSpeed = { x: 0.00009, y: 0.00013, z: 0.00007 };
-    const arcballSmoothing = 0.012;
-    const arcballSensitivity = 1.65;
-    const panSensitivity = 1;
-    const zoomStep = 0.004;
-    const minZoom = 0.55;
-    const maxZoom = 4.8;
-    const lightDirection = normalize({ x: -0.45, y: -0.9, z: 1 });
-    const initialViewQuaternion = quaternionFromEuler({ x: -0.78, y: 0.3, z: 0 });
-
-    const sceneVertexShaderSource = `
-      attribute vec3 aPosition;
-      attribute vec3 aNormal;
-      attribute vec2 aCellUv;
-      attribute vec2 aLocalUv;
-
-      uniform mat4 uProjectionMatrix;
-      uniform mat4 uModelMatrix;
-      uniform mat3 uNormalMatrix;
-      uniform vec3 uLightDirection;
-      uniform vec2 uPanNdc;
-      uniform float uZoom;
-      uniform sampler2D uStateTexture;
-
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      varying vec3 vLightDir;
-      varying vec2 vLocalUv;
-      varying float vAlive;
-
-      void main() {
-        vec4 worldPosition = uModelMatrix * vec4(aPosition, 1.0);
-        vec4 clip = uProjectionMatrix * worldPosition;
-        clip.xy = clip.xy * uZoom + uPanNdc * clip.w;
-        gl_Position = clip;
-
-        vNormal = normalize(uNormalMatrix * aNormal);
-        vViewDir = normalize(-worldPosition.xyz);
-        vLightDir = normalize(uLightDirection);
-        vLocalUv = aLocalUv;
-        vAlive = texture2D(uStateTexture, aCellUv).r;
-      }
-    `;
-
-    const sceneFragmentShaderSource = `
-      precision mediump float;
-
-      varying vec3 vNormal;
-      varying vec3 vViewDir;
-      varying vec3 vLightDir;
-      varying vec2 vLocalUv;
-      varying float vAlive;
-
-      vec3 aliveBase = vec3(0.26, 0.95, 0.43);
-      vec3 aliveCore = vec3(0.96, 1.0, 0.52);
-      vec3 deadBase = vec3(0.18, 0.24, 0.18);
-      vec3 deadHigh = vec3(0.46, 0.58, 0.45);
-
-      void main() {
-        vec3 normal = normalize(vNormal);
-        vec3 viewDir = normalize(vViewDir);
-        vec3 lightDir = normalize(vLightDir);
-        vec3 halfVector = normalize(lightDir + viewDir);
-
-        float diffuse = max(0.0, dot(normal, lightDir));
-        float rim = pow(1.0 - max(0.0, dot(normal, viewDir)), 3.6);
-        float specular = pow(max(0.0, dot(normal, halfVector)), 28.0);
-
-        float cellEdge = min(min(vLocalUv.x, 1.0 - vLocalUv.x), min(vLocalUv.y, 1.0 - vLocalUv.y));
-        float gridLine = 1.0 - smoothstep(0.03, 0.11, cellEdge);
-        vec3 deadColor = mix(deadBase, deadHigh, diffuse * 0.6 + rim * 0.12);
-        vec3 aliveColor = mix(aliveBase, aliveCore, diffuse * 0.7 + rim * 0.08);
-        vec3 color = mix(deadColor, aliveColor, vAlive);
-
-        color += vec3(0.02, 0.03, 0.02) * rim;
-        color += vec3(0.28, 0.34, 0.18) * specular * (0.12 + vAlive * 0.32);
-        color = mix(color, color * 1.22 + vec3(0.18, 0.24, 0.08), gridLine * (0.06 + vAlive * 0.16));
-
-        gl_FragColor = vec4(color, 1.0);
-      }
-    `;
-
-    const simVertexShaderSource = `
-      attribute vec2 aPosition;
-      varying vec2 vUv;
-
-      void main() {
-        vUv = aPosition * 0.5 + 0.5;
-        gl_Position = vec4(aPosition, 0.0, 1.0);
-      }
-    `;
-
-    const simFragmentShaderSource = `
-      precision mediump float;
-
-      varying vec2 vUv;
-
-      uniform sampler2D uStateTexture;
-      uniform vec2 uTexel;
-
-      float aliveAt(vec2 offset) {
-        vec2 uv = fract(vUv + offset * uTexel);
-        return step(0.5, texture2D(uStateTexture, uv).r);
-      }
-
-      void main() {
-        float neighbors =
-          aliveAt(vec2(-1.0, -1.0)) +
-          aliveAt(vec2(0.0, -1.0)) +
-          aliveAt(vec2(1.0, -1.0)) +
-          aliveAt(vec2(-1.0, 0.0)) +
-          aliveAt(vec2(1.0, 0.0)) +
-          aliveAt(vec2(-1.0, 1.0)) +
-          aliveAt(vec2(0.0, 1.0)) +
-          aliveAt(vec2(1.0, 1.0));
-
-        float alive = step(0.5, texture2D(uStateTexture, vUv).r);
-        float nextAlive = 0.0;
-
-        if (neighbors > 2.5 && neighbors < 3.5) {
-          nextAlive = 1.0;
-        } else if (alive > 0.5 && neighbors > 1.5 && neighbors < 2.5) {
-          nextAlive = 1.0;
-        }
-
-        gl_FragColor = vec4(vec3(nextAlive), 1.0);
-      }
-    `;
-
-    const state = {
-      width: 0,
-      height: 0,
-      aspect: 1,
-      fieldOfView: 1,
-      projectionNear: 10,
-      projectionFar: 2000,
-      viewQuaternion: initialViewQuaternion,
-      targetViewQuaternion: initialViewQuaternion,
-      spinRotation: { x: 0, y: 0, z: 0.18 },
-      autoRotation: { ...autoRotationSpeed },
-      running: true,
-      dragging: false,
-      dragMode: null,
-      lastArcballVector: { x: 0, y: 0, z: 1 },
-      lastPointer: { x: 0, y: 0 },
-      panOffset: { x: 0, y: 0 },
-      zoom: 1,
-      generation: 0,
-      accumulator: 0,
-      geometryBuffer: null,
-      vertexCount: 0,
-      sceneMetrics: {
-        majorRadius: baseMajorRadius,
-        minorRadius: baseMinorRadius,
-        cameraDistance: baseCameraDistance,
-        projectionScale: baseProjectionScale
-      },
-      arcballBounds: {
-        left: 0,
-        top: 0,
-        centerX: 0,
-        centerY: 0,
-        radius: 1
-      },
-      stateTextures: [],
-      stateFramebuffers: [],
-      currentStateIndex: 0
+    const CONFIG = {
+      majorSegments: 2000,
+      minorSegments: 700,
+      verticesPerCell: 6,
+      floatsPerVertex: 10,
+      baseMajorRadius: 182,
+      baseMinorRadius: 80,
+      baseCameraDistance: 640,
+      baseProjectionScale: 760,
+      simStepMs: 100,
+      autoRotationSpeed: { x: 0.00009, y: 0.00013, z: 0.00007 },
+      arcballSmoothing: 0.012,
+      arcballSensitivity: 1.65,
+      panSensitivity: 1,
+      zoomStep: 0.004,
+      minZoom: 0.55,
+      maxZoom: 4.8
     };
 
-    const sceneProgram = createProgram(gl, sceneVertexShaderSource, sceneFragmentShaderSource);
-    const simProgram = createProgram(gl, simVertexShaderSource, simFragmentShaderSource);
+    CONFIG.cellCount = CONFIG.majorSegments * CONFIG.minorSegments;
+    CONFIG.lightDirection = normalize({ x: -0.45, y: -0.9, z: 1 });
+    CONFIG.initialViewQuaternion = quaternionFromEuler({ x: -0.78, y: 0.3, z: 0 });
+
+    const FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
+    const STRIDE_BYTES = CONFIG.floatsPerVertex * FLOAT_BYTES;
+    const NORMAL_OFFSET = 3 * FLOAT_BYTES;
+    const CELL_UV_OFFSET = 6 * FLOAT_BYTES;
+    const LOCAL_UV_OFFSET = 8 * FLOAT_BYTES;
+
+    const SHADERS = {
+      sceneVertex: `
+        attribute vec3 aPosition;
+        attribute vec3 aNormal;
+        attribute vec2 aCellUv;
+        attribute vec2 aLocalUv;
+
+        uniform mat4 uProjectionMatrix;
+        uniform mat4 uModelMatrix;
+        uniform mat3 uNormalMatrix;
+        uniform vec3 uLightDirection;
+        uniform vec2 uPanNdc;
+        uniform float uZoom;
+        uniform sampler2D uStateTexture;
+
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        varying vec3 vLightDir;
+        varying vec2 vLocalUv;
+        varying float vAlive;
+
+        void main() {
+          vec4 worldPosition = uModelMatrix * vec4(aPosition, 1.0);
+          vec4 clip = uProjectionMatrix * worldPosition;
+          clip.xy = clip.xy * uZoom + uPanNdc * clip.w;
+          gl_Position = clip;
+
+          vNormal = normalize(uNormalMatrix * aNormal);
+          vViewDir = normalize(-worldPosition.xyz);
+          vLightDir = normalize(uLightDirection);
+          vLocalUv = aLocalUv;
+          vAlive = texture2D(uStateTexture, aCellUv).r;
+        }
+      `,
+      sceneFragment: `
+        precision mediump float;
+
+        varying vec3 vNormal;
+        varying vec3 vViewDir;
+        varying vec3 vLightDir;
+        varying vec2 vLocalUv;
+        varying float vAlive;
+
+        vec3 aliveBase = vec3(0.26, 0.95, 0.43);
+        vec3 aliveCore = vec3(0.96, 1.0, 0.52);
+        vec3 deadBase = vec3(0.18, 0.24, 0.18);
+        vec3 deadHigh = vec3(0.46, 0.58, 0.45);
+
+        void main() {
+          vec3 normal = normalize(vNormal);
+          vec3 viewDir = normalize(vViewDir);
+          vec3 lightDir = normalize(vLightDir);
+          vec3 halfVector = normalize(lightDir + viewDir);
+
+          float diffuse = max(0.0, dot(normal, lightDir));
+          float rim = pow(1.0 - max(0.0, dot(normal, viewDir)), 3.6);
+          float specular = pow(max(0.0, dot(normal, halfVector)), 28.0);
+
+          float cellEdge = min(min(vLocalUv.x, 1.0 - vLocalUv.x), min(vLocalUv.y, 1.0 - vLocalUv.y));
+          float gridLine = 1.0 - smoothstep(0.03, 0.11, cellEdge);
+          vec3 deadColor = mix(deadBase, deadHigh, diffuse * 0.6 + rim * 0.12);
+          vec3 aliveColor = mix(aliveBase, aliveCore, diffuse * 0.7 + rim * 0.08);
+          vec3 color = mix(deadColor, aliveColor, vAlive);
+
+          color += vec3(0.02, 0.03, 0.02) * rim;
+          color += vec3(0.28, 0.34, 0.18) * specular * (0.12 + vAlive * 0.32);
+          color = mix(color, color * 1.22 + vec3(0.18, 0.24, 0.08), gridLine * (0.06 + vAlive * 0.16));
+
+          gl_FragColor = vec4(color, 1.0);
+        }
+      `,
+      simVertex: `
+        attribute vec2 aPosition;
+        varying vec2 vUv;
+
+        void main() {
+          vUv = aPosition * 0.5 + 0.5;
+          gl_Position = vec4(aPosition, 0.0, 1.0);
+        }
+      `,
+      simFragment: `
+        precision mediump float;
+
+        varying vec2 vUv;
+
+        uniform sampler2D uStateTexture;
+        uniform vec2 uTexel;
+
+        float aliveAt(vec2 offset) {
+          vec2 uv = fract(vUv + offset * uTexel);
+          return step(0.5, texture2D(uStateTexture, uv).r);
+        }
+
+        void main() {
+          float neighbors =
+            aliveAt(vec2(-1.0, -1.0)) +
+            aliveAt(vec2(0.0, -1.0)) +
+            aliveAt(vec2(1.0, -1.0)) +
+            aliveAt(vec2(-1.0, 0.0)) +
+            aliveAt(vec2(1.0, 0.0)) +
+            aliveAt(vec2(-1.0, 1.0)) +
+            aliveAt(vec2(0.0, 1.0)) +
+            aliveAt(vec2(1.0, 1.0));
+
+          float alive = step(0.5, texture2D(uStateTexture, vUv).r);
+          float nextAlive = 0.0;
+
+          if (neighbors > 2.5 && neighbors < 3.5) {
+            nextAlive = 1.0;
+          } else if (alive > 0.5 && neighbors > 1.5 && neighbors < 2.5) {
+            nextAlive = 1.0;
+          }
+
+          gl_FragColor = vec4(vec3(nextAlive), 1.0);
+        }
+      `
+    };
+
+    const state = createInitialState();
+
+    const sceneProgram = createProgram(gl, SHADERS.sceneVertex, SHADERS.sceneFragment);
+    const simProgram = createProgram(gl, SHADERS.simVertex, SHADERS.simFragment);
     const sceneLocations = getSceneLocations(gl, sceneProgram);
     const simLocations = getSimLocations(gl, simProgram);
     const quadBuffer = createFullscreenQuad(gl);
 
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.disable(gl.CULL_FACE);
-    gl.clearColor(0.012, 0.031, 0.016, 1);
-
+    configureGl();
     initializeSimulationResources();
+    bindEvents();
+    resetSimulation();
+    resize();
+    render();
+    startAnimationLoop();
+
+    function createInitialState() {
+      return {
+        width: 0,
+        height: 0,
+        aspect: 1,
+        fieldOfView: 1,
+        projectionNear: 10,
+        projectionFar: 2000,
+        viewQuaternion: CONFIG.initialViewQuaternion,
+        targetViewQuaternion: CONFIG.initialViewQuaternion,
+        spinRotation: { x: 0, y: 0, z: 0.18 },
+        autoRotation: { ...CONFIG.autoRotationSpeed },
+        running: true,
+        dragging: false,
+        dragMode: null,
+        lastArcballVector: { x: 0, y: 0, z: 1 },
+        lastPointer: { x: 0, y: 0 },
+        panOffset: { x: 0, y: 0 },
+        zoom: 1,
+        generation: 0,
+        accumulator: 0,
+        geometryBuffer: null,
+        vertexCount: 0,
+        sceneMetrics: createSceneMetrics(),
+        arcballBounds: {
+          left: 0,
+          top: 0,
+          centerX: 0,
+          centerY: 0,
+          radius: 1
+        },
+        stateTextures: [],
+        stateFramebuffers: [],
+        currentStateIndex: 0,
+        matrices: {
+          projection: new Float32Array(16),
+          spin: new Float32Array(16),
+          view: new Float32Array(16),
+          rotation: new Float32Array(16),
+          model: new Float32Array(16),
+          translation: new Float32Array(16),
+          normal: new Float32Array(9)
+        }
+      };
+    }
+
+    function createSceneMetrics(overrides = {}) {
+      return {
+        majorRadius: CONFIG.baseMajorRadius,
+        minorRadius: CONFIG.baseMinorRadius,
+        cameraDistance: CONFIG.baseCameraDistance,
+        projectionScale: CONFIG.baseProjectionScale,
+        ...overrides
+      };
+    }
+
+    function configureGl() {
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.disable(gl.CULL_FACE);
+      gl.clearColor(0.012, 0.031, 0.016, 1);
+    }
+
+    function bindEvents() {
+      canvas.addEventListener("pointerdown", handlePointerDown);
+      canvas.addEventListener("pointermove", handlePointerMove);
+      canvas.addEventListener("pointerup", stopDragging);
+      canvas.addEventListener("pointerleave", resetDraggingState);
+      canvas.addEventListener("pointercancel", stopDragging);
+      canvas.addEventListener("contextmenu", preventDefault);
+      canvas.addEventListener("wheel", handleWheel, { passive: false });
+      canvas.addEventListener("dblclick", resetCamera);
+      window.addEventListener("resize", resize);
+    }
+
+    function startAnimationLoop() {
+      let previousFrame = performance.now();
+
+      function frame(now) {
+        const delta = Math.min(32, now - previousFrame);
+        previousFrame = now;
+        tick(delta);
+        render();
+        requestAnimationFrame(frame);
+      }
+
+      requestAnimationFrame(frame);
+    }
 
     function createShader(glContext, type, source) {
       const shader = glContext.createShader(type);
@@ -401,8 +452,8 @@
         glContext.TEXTURE_2D,
         0,
         glContext.RGBA,
-        majorSegments,
-        minorSegments,
+        CONFIG.majorSegments,
+        CONFIG.minorSegments,
         0,
         glContext.RGBA,
         glContext.UNSIGNED_BYTE,
@@ -448,9 +499,9 @@
     }
 
     function createRandomStateData() {
-      const data = new Uint8Array(cellCount * 4);
+      const data = new Uint8Array(CONFIG.cellCount * 4);
 
-      for (let index = 0; index < cellCount; index += 1) {
+      for (let index = 0; index < CONFIG.cellCount; index += 1) {
         const alive = Math.random() > 0.68 ? 255 : 0;
         const offset = index * 4;
         data[offset] = alive;
@@ -463,10 +514,12 @@
     }
 
     function createEmptyStateData() {
-      const data = new Uint8Array(cellCount * 4);
+      const data = new Uint8Array(CONFIG.cellCount * 4);
+
       for (let index = 3; index < data.length; index += 4) {
         data[index] = 255;
       }
+
       return data;
     }
 
@@ -488,28 +541,30 @@
       gl.bindTexture(gl.TEXTURE_2D, null);
     }
 
-    function randomizeSimulation() {
+    function resetSimulation() {
       const randomData = createRandomStateData();
+      const emptyData = createEmptyStateData();
 
-      for (let index = 0; index < state.stateTextures.length; index += 1) {
-        gl.bindTexture(gl.TEXTURE_2D, state.stateTextures[index]);
+      state.stateTextures.forEach((texture, index) => {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texSubImage2D(
           gl.TEXTURE_2D,
           0,
           0,
           0,
-          majorSegments,
-          minorSegments,
+          CONFIG.majorSegments,
+          CONFIG.minorSegments,
           gl.RGBA,
           gl.UNSIGNED_BYTE,
-          index === 0 ? randomData : createEmptyStateData()
+          index === 0 ? randomData : emptyData
         );
-      }
+      });
 
       state.currentStateIndex = 0;
       state.generation = 0;
+      state.accumulator = 0;
       state.running = true;
-      state.autoRotation = { ...autoRotationSpeed };
+      state.autoRotation = { ...CONFIG.autoRotationSpeed };
       gl.bindTexture(gl.TEXTURE_2D, null);
     }
 
@@ -518,7 +573,7 @@
       const targetIndex = 1 - sourceIndex;
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, state.stateFramebuffers[targetIndex]);
-      gl.viewport(0, 0, majorSegments, minorSegments);
+      gl.viewport(0, 0, CONFIG.majorSegments, CONFIG.minorSegments);
       gl.disable(gl.DEPTH_TEST);
 
       gl.useProgram(simProgram);
@@ -529,7 +584,7 @@
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, state.stateTextures[sourceIndex]);
       gl.uniform1i(simLocations.uniforms.stateTexture, 0);
-      gl.uniform2f(simLocations.uniforms.texel, 1 / majorSegments, 1 / minorSegments);
+      gl.uniform2f(simLocations.uniforms.texel, 1 / CONFIG.majorSegments, 1 / CONFIG.minorSegments);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -540,18 +595,12 @@
       state.generation += 1;
     }
 
-    function updateArcballBounds(rect) {
-      state.arcballBounds.left = rect.left;
-      state.arcballBounds.top = rect.top;
-      state.arcballBounds.centerX = rect.width * 0.5;
-      state.arcballBounds.centerY = rect.height * 0.5;
-      state.arcballBounds.radius = Math.min(rect.width, rect.height) * 0.5 || 1;
-    }
-
     function createTorusGeometry(metrics) {
-      const data = new Float32Array(cellCount * verticesPerCell * floatsPerVertex);
-      const du = (Math.PI * 2) / majorSegments;
-      const dv = (Math.PI * 2) / minorSegments;
+      const data = new Float32Array(
+        CONFIG.cellCount * CONFIG.verticesPerCell * CONFIG.floatsPerVertex
+      );
+      const du = (Math.PI * 2) / CONFIG.majorSegments;
+      const dv = (Math.PI * 2) / CONFIG.minorSegments;
       let offset = 0;
 
       function writeVertex(u, v, cellU, cellV, centerU, centerV, localU, localV) {
@@ -571,19 +620,19 @@
         data[offset + 7] = cellV;
         data[offset + 8] = localU;
         data[offset + 9] = localV;
-        offset += floatsPerVertex;
+        offset += CONFIG.floatsPerVertex;
       }
 
-      for (let i = 0; i < majorSegments; i += 1) {
+      for (let i = 0; i < CONFIG.majorSegments; i += 1) {
         const u = i * du;
-        const uNext = ((i + 1) % majorSegments) * du;
-        const cellU = (i + 0.5) / majorSegments;
+        const uNext = ((i + 1) % CONFIG.majorSegments) * du;
+        const cellU = (i + 0.5) / CONFIG.majorSegments;
         const centerU = u + du * 0.5;
 
-        for (let j = 0; j < minorSegments; j += 1) {
+        for (let j = 0; j < CONFIG.minorSegments; j += 1) {
           const v = j * dv;
-          const vNext = ((j + 1) % minorSegments) * dv;
-          const cellV = (j + 0.5) / minorSegments;
+          const vNext = ((j + 1) % CONFIG.minorSegments) * dv;
+          const cellV = (j + 0.5) / CONFIG.minorSegments;
           const centerV = v + dv * 0.5;
 
           writeVertex(u, v, cellU, cellV, centerU, centerV, 0, 0);
@@ -607,7 +656,7 @@
 
       gl.bindBuffer(gl.ARRAY_BUFFER, state.geometryBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
-      state.vertexCount = geometry.length / floatsPerVertex;
+      state.vertexCount = geometry.length / CONFIG.floatsPerVertex;
     }
 
     function resize() {
@@ -615,26 +664,246 @@
       const ratio = window.devicePixelRatio || 1;
       const shortestSide = Math.min(rect.width, rect.height);
       const isPortrait = rect.height > rect.width;
-      const scale = Math.max(0.68, Math.min(1.12, shortestSide / 390));
+      const scale = clamp(shortestSide / 390, 0.68, 1.12);
 
       state.width = rect.width;
       state.height = rect.height;
       state.aspect = rect.width / Math.max(rect.height, 1);
-      state.sceneMetrics = {
-        majorRadius: baseMajorRadius * (isPortrait ? scale * 0.9 : scale),
-        minorRadius: baseMinorRadius * (isPortrait ? scale * 0.92 : scale),
-        cameraDistance: baseCameraDistance * (isPortrait ? 0.95 : 1),
-        projectionScale: baseProjectionScale * (isPortrait ? scale * 0.82 : scale)
-      };
-
+      state.sceneMetrics = createSceneMetrics({
+        majorRadius: CONFIG.baseMajorRadius * (isPortrait ? scale * 0.9 : scale),
+        minorRadius: CONFIG.baseMinorRadius * (isPortrait ? scale * 0.92 : scale),
+        cameraDistance: CONFIG.baseCameraDistance * (isPortrait ? 0.95 : 1),
+        projectionScale: CONFIG.baseProjectionScale * (isPortrait ? scale * 0.82 : scale)
+      });
       state.fieldOfView = 2 * Math.atan(rect.height / (2 * state.sceneMetrics.projectionScale));
 
-      canvas.width = Math.round(rect.width * ratio);
-      canvas.height = Math.round(rect.height * ratio);
-      gl.viewport(0, 0, canvas.width, canvas.height);
+      const nextCanvasWidth = Math.round(rect.width * ratio);
+      const nextCanvasHeight = Math.round(rect.height * ratio);
 
+      if (canvas.width !== nextCanvasWidth || canvas.height !== nextCanvasHeight) {
+        canvas.width = nextCanvasWidth;
+        canvas.height = nextCanvasHeight;
+      }
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
       updateArcballBounds(rect);
       uploadGeometry();
+    }
+
+    function updateArcballBounds(rect) {
+      state.arcballBounds.left = rect.left;
+      state.arcballBounds.top = rect.top;
+      state.arcballBounds.centerX = rect.width * 0.5;
+      state.arcballBounds.centerY = rect.height * 0.5;
+      state.arcballBounds.radius = Math.min(rect.width, rect.height) * 0.5 || 1;
+    }
+
+    function handlePointerDown(event) {
+      updateArcballBounds(canvas.getBoundingClientRect());
+
+      if (event.button === 2 || event.button === 1) {
+        state.dragMode = "pan";
+        state.lastPointer.x = event.clientX;
+        state.lastPointer.y = event.clientY;
+      } else {
+        state.dragMode = "rotate";
+        state.lastArcballVector = projectPointerToArcball(event);
+      }
+
+      state.dragging = true;
+      canvas.classList.add("dragging");
+      canvas.setPointerCapture(event.pointerId);
+    }
+
+    function handlePointerMove(event) {
+      if (!state.dragging) {
+        return;
+      }
+
+      if (state.dragMode === "pan") {
+        state.panOffset.x += (event.clientX - state.lastPointer.x) * CONFIG.panSensitivity;
+        state.panOffset.y += (event.clientY - state.lastPointer.y) * CONFIG.panSensitivity;
+        state.lastPointer.x = event.clientX;
+        state.lastPointer.y = event.clientY;
+        return;
+      }
+
+      const currentArcballVector = projectPointerToArcball(event);
+      const deltaQuaternion = quaternionBetweenVectors(state.lastArcballVector, currentArcballVector);
+      state.targetViewQuaternion = multiplyQuaternions(deltaQuaternion, state.targetViewQuaternion);
+      state.lastArcballVector = currentArcballVector;
+    }
+
+    function resetDraggingState() {
+      state.dragging = false;
+      state.dragMode = null;
+      canvas.classList.remove("dragging");
+    }
+
+    function stopDragging(event) {
+      resetDraggingState();
+
+      if (event && canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    function handleWheel(event) {
+      event.preventDefault();
+      applyZoomDelta(normalizeWheelDelta(event));
+    }
+
+    function preventDefault(event) {
+      event.preventDefault();
+    }
+
+    function resetCamera() {
+      state.targetViewQuaternion = CONFIG.initialViewQuaternion;
+      state.viewQuaternion = CONFIG.initialViewQuaternion;
+      state.panOffset.x = 0;
+      state.panOffset.y = 0;
+      state.zoom = 1;
+    }
+
+    function projectPointerToArcball(event) {
+      const bounds = state.arcballBounds;
+      const x = ((event.clientX - bounds.left) - bounds.centerX) / bounds.radius;
+      const y = (bounds.centerY - (event.clientY - bounds.top)) / bounds.radius;
+      const lengthSquared = x * x + y * y;
+
+      if (lengthSquared <= 1) {
+        return { x, y, z: Math.sqrt(1 - lengthSquared) };
+      }
+
+      const scale = 1 / Math.sqrt(lengthSquared);
+      return { x: x * scale, y: y * scale, z: 0 };
+    }
+
+    function normalizeWheelDelta(event) {
+      if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+        return event.deltaY * 16;
+      }
+
+      if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+        return event.deltaY * Math.max(state.height, 1);
+      }
+
+      return event.deltaY;
+    }
+
+    function applyZoomDelta(deltaY) {
+      state.zoom = clamp(
+        state.zoom * Math.exp(-deltaY * CONFIG.zoomStep),
+        CONFIG.minZoom,
+        CONFIG.maxZoom
+      );
+    }
+
+    function getCurrentStateTexture() {
+      return state.stateTextures[state.currentStateIndex];
+    }
+
+    function render() {
+      const matrices = state.matrices;
+      writePerspectiveMatrix(
+        matrices.projection,
+        state.fieldOfView,
+        state.aspect,
+        state.projectionNear,
+        state.projectionFar
+      );
+      writeRotationMatrixFromEuler(matrices.spin, state.spinRotation);
+      writeRotationMatrixFromQuaternion(matrices.view, state.viewQuaternion);
+      multiplyMatricesInto(matrices.rotation, matrices.view, matrices.spin);
+      writeTranslationMatrix(matrices.translation, 0, 0, -state.sceneMetrics.cameraDistance);
+      multiplyMatricesInto(matrices.model, matrices.translation, matrices.rotation);
+      extractNormalMatrixInto(matrices.normal, matrices.rotation);
+
+      const panNdcX = state.width ? (state.panOffset.x * 2) / state.width : 0;
+      const panNdcY = state.height ? (-state.panOffset.y * 2) / state.height : 0;
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(sceneProgram);
+      gl.bindBuffer(gl.ARRAY_BUFFER, state.geometryBuffer);
+
+      bindSceneAttributes();
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, getCurrentStateTexture());
+      gl.uniform1i(sceneLocations.uniforms.stateTexture, 0);
+      gl.uniformMatrix4fv(sceneLocations.uniforms.projectionMatrix, false, matrices.projection);
+      gl.uniformMatrix4fv(sceneLocations.uniforms.modelMatrix, false, matrices.model);
+      gl.uniformMatrix3fv(sceneLocations.uniforms.normalMatrix, false, matrices.normal);
+      gl.uniform3f(
+        sceneLocations.uniforms.lightDirection,
+        CONFIG.lightDirection.x,
+        CONFIG.lightDirection.y,
+        CONFIG.lightDirection.z
+      );
+      gl.uniform2f(sceneLocations.uniforms.panNdc, panNdcX, panNdcY);
+      gl.uniform1f(sceneLocations.uniforms.zoom, state.zoom);
+
+      gl.drawArrays(gl.TRIANGLES, 0, state.vertexCount);
+    }
+
+    function bindSceneAttributes() {
+      gl.enableVertexAttribArray(sceneLocations.attributes.position);
+      gl.vertexAttribPointer(sceneLocations.attributes.position, 3, gl.FLOAT, false, STRIDE_BYTES, 0);
+
+      gl.enableVertexAttribArray(sceneLocations.attributes.normal);
+      gl.vertexAttribPointer(
+        sceneLocations.attributes.normal,
+        3,
+        gl.FLOAT,
+        false,
+        STRIDE_BYTES,
+        NORMAL_OFFSET
+      );
+
+      gl.enableVertexAttribArray(sceneLocations.attributes.cellUv);
+      gl.vertexAttribPointer(
+        sceneLocations.attributes.cellUv,
+        2,
+        gl.FLOAT,
+        false,
+        STRIDE_BYTES,
+        CELL_UV_OFFSET
+      );
+
+      gl.enableVertexAttribArray(sceneLocations.attributes.localUv);
+      gl.vertexAttribPointer(
+        sceneLocations.attributes.localUv,
+        2,
+        gl.FLOAT,
+        false,
+        STRIDE_BYTES,
+        LOCAL_UV_OFFSET
+      );
+    }
+
+    function tick(deltaMs) {
+      const smoothing = 1 - Math.exp(-CONFIG.arcballSmoothing * deltaMs);
+      state.viewQuaternion = slerpQuaternions(
+        state.viewQuaternion,
+        state.targetViewQuaternion,
+        smoothing
+      );
+
+      if (!state.running) {
+        return;
+      }
+
+      state.spinRotation.x += state.autoRotation.x * deltaMs;
+      state.spinRotation.y -= state.autoRotation.y * deltaMs;
+      state.spinRotation.z += state.autoRotation.z * deltaMs;
+      state.accumulator += deltaMs;
+
+      while (state.accumulator >= CONFIG.simStepMs) {
+        state.accumulator -= CONFIG.simStepMs;
+        stepSimulation();
+      }
     }
 
     function normalize(vector) {
@@ -695,7 +964,7 @@
     function quaternionBetweenVectors(from, to) {
       const axis = cross(from, to);
       const axisLength = Math.hypot(axis.x, axis.y, axis.z);
-      const alignment = Math.max(-1, Math.min(1, dot(from, to)));
+      const alignment = clamp(dot(from, to), -1, 1);
 
       if (axisLength < 1e-6) {
         if (alignment > 0.999999) {
@@ -714,7 +983,7 @@
           y: axis.y / axisLength,
           z: axis.z / axisLength
         },
-        Math.acos(alignment) * arcballSensitivity
+        Math.acos(alignment) * CONFIG.arcballSensitivity
       );
     }
 
@@ -748,7 +1017,7 @@
         });
       }
 
-      const theta = Math.acos(Math.max(-1, Math.min(1, cosine)));
+      const theta = Math.acos(clamp(cosine, -1, 1));
       const sinTheta = Math.sin(theta);
       const fromWeight = Math.sin((1 - t) * theta) / sinTheta;
       const toWeight = Math.sin(t * theta) / sinTheta;
@@ -761,57 +1030,29 @@
       });
     }
 
-    function projectPointerToArcball(event) {
-      const bounds = state.arcballBounds;
-      const x = ((event.clientX - bounds.left) - bounds.centerX) / bounds.radius;
-      const y = (bounds.centerY - (event.clientY - bounds.top)) / bounds.radius;
-      const lengthSquared = x * x + y * y;
-
-      if (lengthSquared <= 1) {
-        return {
-          x,
-          y,
-          z: Math.sqrt(1 - lengthSquared)
-        };
-      }
-
-      const scale = 1 / Math.sqrt(lengthSquared);
-      return {
-        x: x * scale,
-        y: y * scale,
-        z: 0
-      };
-    }
-
-    function normalizeWheelDelta(event) {
-      if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
-        return event.deltaY * 16;
-      }
-
-      if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
-        return event.deltaY * Math.max(state.height, 1);
-      }
-
-      return event.deltaY;
-    }
-
-    function applyZoomDelta(deltaY) {
-      state.zoom = clamp(state.zoom * Math.exp(-deltaY * zoomStep), minZoom, maxZoom);
-    }
-
-    function makePerspectiveMatrix(fovY, aspect, near, far) {
+    function writePerspectiveMatrix(out, fovY, aspect, near, far) {
       const f = 1 / Math.tan(fovY / 2);
       const rangeInverse = 1 / (near - far);
 
-      return new Float32Array([
-        f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, (near + far) * rangeInverse, -1,
-        0, 0, near * far * 2 * rangeInverse, 0
-      ]);
+      out[0] = f / aspect;
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[4] = 0;
+      out[5] = f;
+      out[6] = 0;
+      out[7] = 0;
+      out[8] = 0;
+      out[9] = 0;
+      out[10] = (near + far) * rangeInverse;
+      out[11] = -1;
+      out[12] = 0;
+      out[13] = 0;
+      out[14] = near * far * 2 * rangeInverse;
+      out[15] = 0;
     }
 
-    function makeRotationMatrixFromQuaternion(quaternion) {
+    function writeRotationMatrixFromQuaternion(out, quaternion) {
       const { w, x, y, z } = quaternion;
       const x2 = x + x;
       const y2 = y + y;
@@ -826,15 +1067,25 @@
       const wy = w * y2;
       const wz = w * z2;
 
-      return new Float32Array([
-        1 - (yy + zz), xy + wz, xz - wy, 0,
-        xy - wz, 1 - (xx + zz), yz + wx, 0,
-        xz + wy, yz - wx, 1 - (xx + yy), 0,
-        0, 0, 0, 1
-      ]);
+      out[0] = 1 - (yy + zz);
+      out[1] = xy + wz;
+      out[2] = xz - wy;
+      out[3] = 0;
+      out[4] = xy - wz;
+      out[5] = 1 - (xx + zz);
+      out[6] = yz + wx;
+      out[7] = 0;
+      out[8] = xz + wy;
+      out[9] = yz - wx;
+      out[10] = 1 - (xx + yy);
+      out[11] = 0;
+      out[12] = 0;
+      out[13] = 0;
+      out[14] = 0;
+      out[15] = 1;
     }
 
-    function makeRotationMatrixFromEuler(rotation) {
+    function writeRotationMatrixFromEuler(out, rotation) {
       const cx = Math.cos(rotation.x);
       const sx = Math.sin(rotation.x);
       const cy = Math.cos(rotation.y);
@@ -842,17 +1093,25 @@
       const cz = Math.cos(rotation.z);
       const sz = Math.sin(rotation.z);
 
-      return new Float32Array([
-        cy * cz, cy * sz, -sy, 0,
-        sx * sy * cz - cx * sz, sx * sy * sz + cx * cz, sx * cy, 0,
-        cx * sy * cz + sx * sz, cx * sy * sz - sx * cz, cx * cy, 0,
-        0, 0, 0, 1
-      ]);
+      out[0] = cy * cz;
+      out[1] = cy * sz;
+      out[2] = -sy;
+      out[3] = 0;
+      out[4] = sx * sy * cz - cx * sz;
+      out[5] = sx * sy * sz + cx * cz;
+      out[6] = sx * cy;
+      out[7] = 0;
+      out[8] = cx * sy * cz + sx * sz;
+      out[9] = cx * sy * sz - sx * cz;
+      out[10] = cx * cy;
+      out[11] = 0;
+      out[12] = 0;
+      out[13] = 0;
+      out[14] = 0;
+      out[15] = 1;
     }
 
-    function multiplyMatrices(a, b) {
-      const out = new Float32Array(16);
-
+    function multiplyMatricesInto(out, a, b) {
       for (let column = 0; column < 4; column += 1) {
         const columnOffset = column * 4;
         const b0 = b[columnOffset];
@@ -865,198 +1124,38 @@
         out[columnOffset + 2] = a[2] * b0 + a[6] * b1 + a[10] * b2 + a[14] * b3;
         out[columnOffset + 3] = a[3] * b0 + a[7] * b1 + a[11] * b2 + a[15] * b3;
       }
-
-      return out;
     }
 
-    function makeTranslationMatrix(x, y, z) {
-      return new Float32Array([
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        x, y, z, 1
-      ]);
+    function writeTranslationMatrix(out, x, y, z) {
+      out[0] = 1;
+      out[1] = 0;
+      out[2] = 0;
+      out[3] = 0;
+      out[4] = 0;
+      out[5] = 1;
+      out[6] = 0;
+      out[7] = 0;
+      out[8] = 0;
+      out[9] = 0;
+      out[10] = 1;
+      out[11] = 0;
+      out[12] = x;
+      out[13] = y;
+      out[14] = z;
+      out[15] = 1;
     }
 
-    function extractNormalMatrix(modelMatrix) {
-      return new Float32Array([
-        modelMatrix[0], modelMatrix[1], modelMatrix[2],
-        modelMatrix[4], modelMatrix[5], modelMatrix[6],
-        modelMatrix[8], modelMatrix[9], modelMatrix[10]
-      ]);
+    function extractNormalMatrixInto(out, modelMatrix) {
+      out[0] = modelMatrix[0];
+      out[1] = modelMatrix[1];
+      out[2] = modelMatrix[2];
+      out[3] = modelMatrix[4];
+      out[4] = modelMatrix[5];
+      out[5] = modelMatrix[6];
+      out[6] = modelMatrix[8];
+      out[7] = modelMatrix[9];
+      out[8] = modelMatrix[10];
     }
-
-    function getCurrentStateTexture() {
-      return state.stateTextures[state.currentStateIndex];
-    }
-
-    function render() {
-      const projectionMatrix = makePerspectiveMatrix(
-        state.fieldOfView,
-        state.aspect,
-        state.projectionNear,
-        state.projectionFar
-      );
-      const spinMatrix = makeRotationMatrixFromEuler(state.spinRotation);
-      const viewRotationMatrix = makeRotationMatrixFromQuaternion(state.viewQuaternion);
-      const rotationMatrix = multiplyMatrices(viewRotationMatrix, spinMatrix);
-      const modelMatrix = multiplyMatrices(
-        makeTranslationMatrix(0, 0, -state.sceneMetrics.cameraDistance),
-        rotationMatrix
-      );
-      const normalMatrix = extractNormalMatrix(rotationMatrix);
-      const panNdcX = state.width ? (state.panOffset.x * 2) / state.width : 0;
-      const panNdcY = state.height ? (-state.panOffset.y * 2) / state.height : 0;
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.useProgram(sceneProgram);
-      gl.bindBuffer(gl.ARRAY_BUFFER, state.geometryBuffer);
-
-      const stride = floatsPerVertex * Float32Array.BYTES_PER_ELEMENT;
-      gl.enableVertexAttribArray(sceneLocations.attributes.position);
-      gl.vertexAttribPointer(sceneLocations.attributes.position, 3, gl.FLOAT, false, stride, 0);
-      gl.enableVertexAttribArray(sceneLocations.attributes.normal);
-      gl.vertexAttribPointer(
-        sceneLocations.attributes.normal,
-        3,
-        gl.FLOAT,
-        false,
-        stride,
-        3 * Float32Array.BYTES_PER_ELEMENT
-      );
-      gl.enableVertexAttribArray(sceneLocations.attributes.cellUv);
-      gl.vertexAttribPointer(
-        sceneLocations.attributes.cellUv,
-        2,
-        gl.FLOAT,
-        false,
-        stride,
-        6 * Float32Array.BYTES_PER_ELEMENT
-      );
-      gl.enableVertexAttribArray(sceneLocations.attributes.localUv);
-      gl.vertexAttribPointer(
-        sceneLocations.attributes.localUv,
-        2,
-        gl.FLOAT,
-        false,
-        stride,
-        8 * Float32Array.BYTES_PER_ELEMENT
-      );
-
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, getCurrentStateTexture());
-      gl.uniform1i(sceneLocations.uniforms.stateTexture, 0);
-      gl.uniformMatrix4fv(sceneLocations.uniforms.projectionMatrix, false, projectionMatrix);
-      gl.uniformMatrix4fv(sceneLocations.uniforms.modelMatrix, false, modelMatrix);
-      gl.uniformMatrix3fv(sceneLocations.uniforms.normalMatrix, false, normalMatrix);
-      gl.uniform3f(sceneLocations.uniforms.lightDirection, lightDirection.x, lightDirection.y, lightDirection.z);
-      gl.uniform2f(sceneLocations.uniforms.panNdc, panNdcX, panNdcY);
-      gl.uniform1f(sceneLocations.uniforms.zoom, state.zoom);
-
-      gl.drawArrays(gl.TRIANGLES, 0, state.vertexCount);
-    }
-
-    function tick(deltaMs) {
-      const smoothing = 1 - Math.exp(-arcballSmoothing * deltaMs);
-      state.viewQuaternion = slerpQuaternions(state.viewQuaternion, state.targetViewQuaternion, smoothing);
-
-      if (state.running) {
-        state.spinRotation.x += state.autoRotation.x * deltaMs;
-        state.spinRotation.y -= state.autoRotation.y * deltaMs;
-        state.spinRotation.z += state.autoRotation.z * deltaMs;
-        state.accumulator += deltaMs;
-
-        while (state.accumulator >= simStepMs) {
-          state.accumulator -= simStepMs;
-          stepSimulation();
-        }
-      }
-    }
-
-    let previousFrame = performance.now();
-    function frame(now) {
-      const delta = Math.min(32, now - previousFrame);
-      previousFrame = now;
-      tick(delta);
-      render();
-      requestAnimationFrame(frame);
-    }
-
-    canvas.addEventListener("pointerdown", (event) => {
-      updateArcballBounds(canvas.getBoundingClientRect());
-
-      if (event.button === 2 || event.button === 1) {
-        state.dragMode = "pan";
-        state.lastPointer.x = event.clientX;
-        state.lastPointer.y = event.clientY;
-      } else {
-        state.dragMode = "rotate";
-        state.lastArcballVector = projectPointerToArcball(event);
-      }
-
-      state.dragging = true;
-      canvas.classList.add("dragging");
-      canvas.setPointerCapture(event.pointerId);
-    });
-
-    canvas.addEventListener("pointermove", (event) => {
-      if (!state.dragging) {
-        return;
-      }
-
-      if (state.dragMode === "pan") {
-        state.panOffset.x += (event.clientX - state.lastPointer.x) * panSensitivity;
-        state.panOffset.y += (event.clientY - state.lastPointer.y) * panSensitivity;
-        state.lastPointer.x = event.clientX;
-        state.lastPointer.y = event.clientY;
-        return;
-      }
-
-      const currentArcballVector = projectPointerToArcball(event);
-      const deltaQuaternion = quaternionBetweenVectors(state.lastArcballVector, currentArcballVector);
-      state.targetViewQuaternion = multiplyQuaternions(deltaQuaternion, state.targetViewQuaternion);
-      state.lastArcballVector = currentArcballVector;
-    });
-
-    function stopDragging(event) {
-      state.dragging = false;
-      state.dragMode = null;
-      canvas.classList.remove("dragging");
-      if (event) {
-        canvas.releasePointerCapture(event.pointerId);
-      }
-    }
-
-    canvas.addEventListener("pointerup", stopDragging);
-    canvas.addEventListener("pointerleave", () => {
-      state.dragging = false;
-      state.dragMode = null;
-      canvas.classList.remove("dragging");
-    });
-    canvas.addEventListener("pointercancel", stopDragging);
-    canvas.addEventListener("contextmenu", (event) => {
-      event.preventDefault();
-    });
-    canvas.addEventListener("wheel", (event) => {
-      event.preventDefault();
-      applyZoomDelta(normalizeWheelDelta(event));
-    }, { passive: false });
-    canvas.addEventListener("dblclick", () => {
-      state.targetViewQuaternion = initialViewQuaternion;
-      state.viewQuaternion = initialViewQuaternion;
-      state.panOffset.x = 0;
-      state.panOffset.y = 0;
-      state.zoom = 1;
-    });
-
-    window.addEventListener("resize", resize);
-
-    randomizeSimulation();
-    resize();
-    render();
-    requestAnimationFrame(frame);
   </script>
 </body>
 </html>
