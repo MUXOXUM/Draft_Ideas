@@ -19,10 +19,7 @@ const CLOCK_GEOMETRY = {
     classicDayNightRadius: 198,
     classicMarkerInnerRadius: 180,
     classicMarkerOuterRadius: 195,
-    classicMarkerLabelRadius: 170,
-    classicMinuteMarkerOuterRadius: 195,
-    classicMinuteMarkerFiveInnerRadius: 184,
-    classicMinuteMarkerQuarterInnerRadius: 182,
+    classicMarkerLabelRadius: 168,
     classicHourHandLength: 180,
     classicSecondsSubdialCenterY: 286,
     classicSecondsSubdialRadius: 44,
@@ -30,6 +27,7 @@ const CLOCK_GEOMETRY = {
     classicSecondsSubdialMajorInnerRadius: 31,
     classicSecondsSubdialOuterRadius: 42,
     classicSecondsSubdialLabelRadius: 24,
+    classicMinutesHandLength: 32,
     classicSecondsHandLength: 34,
     classicCenterDotRadius: 4,
     rotaryTrackHours: 190,
@@ -289,6 +287,7 @@ function createTwentyFourHourClockView() {
         secondsSubdial: "seconds-subdial",
         hourHand: "hour-hand",
         hourHandNight: "hour-hand-night",
+        minutesHand: "minutes-subdial-hand",
         secondsHand: "seconds-subdial-hand",
         nightClipPath: "night-clip-path",
         mapOverlay: "clock-map-overlay",
@@ -329,6 +328,7 @@ function createTwentyFourHourClockView() {
                         <g>
                             <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand" id="${ids.hourHand}"></line>
                             <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.center}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.center - CLOCK_GEOMETRY.classicHourHandLength}" class="hour-hand-night" id="${ids.hourHandNight}" clip-path="url(#night-clip)"></line>
+                            <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY - CLOCK_GEOMETRY.classicMinutesHandLength}" class="minutes-subdial-hand" id="${ids.minutesHand}"></line>
                             <line x1="${CLOCK_GEOMETRY.center}" y1="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY}" x2="${CLOCK_GEOMETRY.center}" y2="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY - CLOCK_GEOMETRY.classicSecondsHandLength}" class="seconds-subdial-hand" id="${ids.secondsHand}"></line>
                             <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.classicSecondsSubdialCenterY}" r="2.5" class="seconds-subdial-center"></circle>
                             <circle cx="${CLOCK_GEOMETRY.center}" cy="${CLOCK_GEOMETRY.center}" r="${CLOCK_GEOMETRY.classicCenterDotRadius}" class="center-circle"></circle>
@@ -496,47 +496,6 @@ function createTwentyFourHourClockView() {
         });
     }
 
-    function appendMinuteMarkers(markers, markersNight) {
-        for (let totalMinutes = 0; totalMinutes < 24 * 60; totalMinutes += 1) {
-            if (totalMinutes % 60 === 0) {
-                continue;
-            }
-
-            const minuteWithinHour = totalMinutes % 60;
-            const angle = getCircleAngle(totalMinutes, 24 * 60);
-            let innerRadius = null;
-            let className = null;
-
-            if (minuteWithinHour % 15 === 0) {
-                innerRadius = CLOCK_GEOMETRY.classicMinuteMarkerQuarterInnerRadius;
-                className = "marker-minute marker-minute--quarter";
-            } else if (minuteWithinHour % 5 === 0) {
-                innerRadius = CLOCK_GEOMETRY.classicMinuteMarkerFiveInnerRadius;
-                className = "marker-minute marker-minute--five";
-            } else {
-                continue;
-            }
-
-            markers.appendChild(
-                createLineByAngle(
-                    CLOCK_GEOMETRY.classicMinuteMarkerOuterRadius,
-                    innerRadius,
-                    angle,
-                    { class: className }
-                )
-            );
-
-            markersNight.appendChild(
-                createLineByAngle(
-                    CLOCK_GEOMETRY.classicMinuteMarkerOuterRadius,
-                    innerRadius,
-                    angle,
-                    { class: className.replace("marker-minute", "marker-minute-night") }
-                )
-            );
-        }
-    }
-
     function appendHourMarkers(markers, markersNight) {
         for (let hour = 0; hour < 24; hour += 1) {
             const angle = getCircleAngle(hour, 24);
@@ -581,7 +540,6 @@ function createTwentyFourHourClockView() {
         const markersNight = query(ids.hourMarkersNight);
         markers.innerHTML = "";
         markersNight.innerHTML = "";
-        appendMinuteMarkers(markers, markersNight);
         appendHourMarkers(markers, markersNight);
     }
 
@@ -667,10 +625,17 @@ function createTwentyFourHourClockView() {
     }
 
     function updateHands() {
-        const { now, hours24 } = getCurrentTimeParts();
+        const { now, minutes, hours24 } = getCurrentTimeParts();
         const hourAngle = getCircleAngle(hours24, 24);
+        const minuteAngle = getCircleAngle(minutes, 60);
         const secondAngle = getCircleAngle(now.getSeconds(), 60);
         const hourPoint = polarToCartesian(CLOCK_GEOMETRY.classicHourHandLength, hourAngle);
+        const minutePoint = polarToCartesian(
+            CLOCK_GEOMETRY.classicMinutesHandLength,
+            minuteAngle,
+            CLOCK_GEOMETRY.center,
+            CLOCK_GEOMETRY.classicSecondsSubdialCenterY
+        );
         const secondPoint = polarToCartesian(
             CLOCK_GEOMETRY.classicSecondsHandLength,
             secondAngle,
@@ -680,6 +645,7 @@ function createTwentyFourHourClockView() {
 
         setLineEnd(query(ids.hourHand), hourPoint);
         setLineEnd(query(ids.hourHandNight), hourPoint);
+        setLineEnd(query(ids.minutesHand), minutePoint);
         setLineEnd(query(ids.secondsHand), secondPoint);
     }
 
