@@ -1,6 +1,5 @@
 # Зависимости
 node_modules/
-vendor/
 
 # Логи
 logs/
@@ -26,7 +25,6 @@ Thumbs.db
 .classpath
 
 # Артефакты сборки
-dist/
 build/
 out/
 target/
