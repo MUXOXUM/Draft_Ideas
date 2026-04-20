@@ -23,14 +23,16 @@
 
 ```text
 Collection_of_ideas/
-├── index.html              # главная страница-каталог
-├── projects.json           # список проектов для витрины
+├── docs/
+│   ├── index.html              # главная страница-каталог
+│   ├── projects.json           # список проектов для витрины
+│   └── */                      # подпроекты с собственными README и index.html
 ├── PROJECT_GUIDELINES.md   # правила для будущих проектов
 ├── IDEAS.md                # заметки и идеи
-└── */                      # подпроекты с собственными README и index.html
+└── README.md
 ```
 
 ## Как открыть
 
 1. Перейти на опубликованную версию: [muxoxum.github.io/Collection_of_ideas](https://muxoxum.github.io/Collection_of_ideas/)
-2. Или открыть репозиторий локально и запустить корневой `index.html` через локальный сервер
+2. Или открыть репозиторий локально и запустить `docs/index.html` через локальный сервер
