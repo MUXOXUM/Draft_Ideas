@@ -11,7 +11,10 @@
     :root {
       color-scheme: dark;
       --bg: #050505;
-      --frame: rgba(255, 255, 255, 0.08);
+      --label: rgba(245, 245, 245, 0.92);
+      --hint: rgba(190, 190, 190, 0.72);
+      --text: rgba(245, 245, 245, 0.92);
+      --muted: rgba(205, 205, 205, 0.8);
     }
 
     * {
@@ -32,30 +35,81 @@
       display: grid;
       place-items: center;
       overflow: hidden;
+      font-family: "Segoe UI", Arial, sans-serif;
     }
 
     .stage {
       width: 100vw;
       height: 100vh;
       display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+      align-items: center;
+      gap: 32px;
+      padding: 32px;
+    }
+
+    .stage__media {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
       place-items: center;
-      padding: 24px;
     }
 
     .illusion {
       display: block;
-      max-width: min(92vw, 1600px);
-      max-height: 92vh;
-      width: auto;
-      height: auto;
+      width: min(100%, 820px);
+      max-height: calc(100vh - 220px);
       object-fit: contain;
       user-select: none;
       -webkit-user-drag: none;
-      border: 1px solid var(--frame);
-      box-shadow:
-        0 24px 80px rgba(0, 0, 0, 0.45),
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
-      background: #0c0c0c;
+    }
+
+    .stage__info {
+      align-self: stretch;
+      display: grid;
+      align-content: center;
+      gap: 18px;
+      min-height: 0;
+    }
+
+    .stage__title {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 56px);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      color: var(--text);
+    }
+
+    .stage__description {
+      margin: 0;
+      max-width: 28ch;
+      font-size: clamp(16px, 1.6vw, 20px);
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    .gallery-label {
+      position: fixed;
+      left: 24px;
+      bottom: 22px;
+      z-index: 1;
+      pointer-events: none;
+      color: var(--label);
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .gallery-label__title {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .gallery-label__hint {
+      margin: 6px 0 0;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      color: var(--hint);
     }
 
     .sr-only {
@@ -70,14 +124,30 @@
       border: 0;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 900px) {
       .stage {
-        padding: 12px;
+        grid-template-columns: 1fr;
+        gap: 16px;
+        padding: 16px;
+        overflow-y: auto;
       }
 
       .illusion {
-        max-width: 96vw;
-        max-height: 96vh;
+        width: min(100%, 720px);
+        max-height: min(40vh, 340px);
+      }
+
+      .stage__info {
+        gap: 14px;
+      }
+
+      .stage__description {
+        max-width: none;
+      }
+
+      .gallery-label {
+        left: 16px;
+        bottom: 14px;
       }
     }
   </style>
@@ -85,35 +155,93 @@
 <body>
   <main class="stage">
     <h1 class="sr-only">Коллекция оптических иллюзий</h1>
-    <img
-      class="illusion"
-      id="illusion"
-      src="./img/2023-05-24_15.43.04_680.jpeg"
-      alt="Оптическая иллюзия"
-    >
+    <div class="stage__media">
+      <img
+        class="illusion"
+        id="illusion"
+        src="./img/hollow_mask_illusion.gif"
+        alt="Оптическая иллюзия"
+      >
+    </div>
+    <section class="stage__info" aria-live="polite">
+      <h2 class="stage__title" id="illusion-title">Hollow Mask Illusion</h2>
+      <p class="stage__description" id="illusion-description">
+        Вогнутая маска воспринимается как выпуклое лицо, потому что мозг слишком сильно доверяет знакомой схеме человеческого лица и игнорирует реальные подсказки глубины.
+      </p>
+    </section>
   </main>
+  <div class="gallery-label" aria-hidden="true">
+    <p class="gallery-label__title">Optical Illusions</p>
+    <p class="gallery-label__hint">← → or A / D</p>
+  </div>
 
   <script>
     const illusions = [
-      "./img/2023-05-24_15.43.04_680.jpeg",
-      "./img/2023-05-24_15.43.27_929.jpg",
-      "./img/2025-08-24_22.43.38_235.webp",
-      "./img/2025-08-24_22.47.44_251.jpg",
-      "./img/2026-03-25_19.23.55_771.jpg",
-      "./img/2026-03-25_19.24.12_945.jpg",
-      "./img/2026-03-25_19.24.42_928.jpg",
-      "./img/2026-03-28_19.52.18_231.png",
-      "./img/2026-03-28_19.53.12_827.png",
-      "./img/2026-03-28_19.54.21_602.webp"
+      {
+        src: "./img/hollow_mask_illusion.gif",
+        title: "Hollow Mask Illusion",
+        description: "Вогнутая маска воспринимается как выпуклое лицо, потому что мозг слишком сильно доверяет знакомой схеме человеческого лица и игнорирует реальные подсказки глубины."
+      },
+      {
+        src: "./img/david_novick_illusion.jpg",
+        title: "Novick Color Contrast Illusion",
+        description: "Шары одного и того же цвета кажутся разными из-за контрастных полос вокруг них. Мозг оценивает оттенок не изолированно, а в зависимости от соседних цветов."
+      },
+      {
+        src: "./img/hermann_grid.webp",
+        title: "Hermann Grid",
+        description: "На пересечениях белой решетки появляются мнимые серые пятна. Это связано с тем, как зрительная система усиливает контраст на границах."
+      },
+      {
+        src: "./img/2025-08-24_22.47.44_251.jpg",
+        title: "Peripheral Drift Pattern",
+        description: "Статичная картинка кажется вращающейся, если смотреть краем глаза. Эффект возникает из-за последовательности контрастов и микродвижений глаз."
+      },
+      {
+        src: "./img/phi_phenomenon.webp",
+        title: "Phi Phenomenon",
+        description: "Мозг склеивает последовательные затухания синих точек в одно непрерывное движение мнимого белого объекта."
+      },
+      {
+        src: "./img/caffe_wall_illusion.jpg",
+        title: "Cafe Wall Illusion",
+        description: "Горизонтальные линии кажутся наклоненными из-за смещенных черных и белых плиток. Локальные контрасты сбивают оценку направления."
+      },
+      {
+        src: "./img/2026-04-25_23.50.50_252.webp",
+        title: "Motion Rings",
+        description: "Кольца выглядят так, будто двигаются в стороны или изменяют свою форму, хотя их положение и размер статичны. Направленные элементы заставляют зрение достраивать движение."
+      },
+      {
+        src: "./img/2026-03-25_19.23.55_771.jpg",
+        title: "Orange Tilt Pattern",
+        description: "Ряды одинаковых овалов начинают казаться изогнутыми и повернутыми. Повторяющаяся структура нарушает точную оценку ориентации."
+      },
+      {
+        src: "./img/checker_shadow_illusion.png",
+        title: "Checker Shadow Illusion",
+        description: "Клетки одинаковой яркости кажутся разными из-за нарисованной тени. Мозг автоматически компенсирует освещение и ошибается в реальной светлоте."
+      },
+      {
+        src: "./img/flash_lag_illusion.gif",
+        title: "Flash-Lag Illusion",
+        description: "В момент движущийся красный квадрат воспринимается чуть впереди зеленой вспышки, хотя на самом деле зеленый квадрат загорается до того как красный с ним сравняется. Мозг предсказывает траекторию и сдвигает позицию."
+      }
     ];
 
     const image = document.getElementById("illusion");
+    const title = document.getElementById("illusion-title");
+    const description = document.getElementById("illusion-description");
     let currentIndex = 0;
 
     function showIllusion(index) {
       currentIndex = (index + illusions.length) % illusions.length;
-      image.src = illusions[currentIndex];
-      image.alt = `Оптическая иллюзия ${currentIndex + 1}`;
+      const illusion = illusions[currentIndex];
+
+      image.src = illusion.src;
+      image.alt = illusion.title;
+      title.textContent = illusion.title;
+      description.textContent = illusion.description;
     }
 
     function handleNavigation(event) {
@@ -136,10 +264,12 @@
 
     window.addEventListener("keydown", handleNavigation);
 
+    showIllusion(0);
+
     // Preload the rest of the images so page switching stays instant.
-    for (const src of illusions.slice(1)) {
+    for (const illusion of illusions.slice(1)) {
       const preload = new Image();
-      preload.src = src;
+      preload.src = illusion.src;
     }
   </script>
 </body>

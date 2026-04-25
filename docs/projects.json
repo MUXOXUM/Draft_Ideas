@@ -4,41 +4,27 @@
     "path": "strange_attractors/index.html",
     "readmePath": "strange_attractors/README.md",
     "createdAt": "2026-03-25",
-    "topic": "art"
+    "topic": "Gallery"
   },
   {
     "title": "Imposing Clocks",
     "path": "imposing_clocks/index.html",
     "readmePath": "imposing_clocks/README.md",
     "createdAt": "2026-04-01",
-    "topic": "art"
+    "topic": "Gallery"
   },
   {
-    "title": "Game Of Life On Toroid (CPU)",
-    "path": "game_of_life_on_toroid_cpu/index.html",
-    "readmePath": "game_of_life_on_toroid_cpu/README.md",
-    "createdAt": "2026-03-20",
-    "topic": "art"
-  },
-  {
-    "title": "Game Of Life On Toroid (GPU)",
-    "path": "game_of_life_on_toroid_gpu/index.html",
-    "readmePath": "game_of_life_on_toroid_gpu/README.md",
-    "createdAt": "2026-03-31",
-    "topic": "art"
+    "title": "Optical Illusions",
+    "path": "optical_illusions/index.html",
+    "readmePath": "optical_illusions/README.md",
+    "createdAt": "2026-03-25",
+    "topic": "Gallery"
   },
   {
     "title": "3D ASCII Console",
     "path": "3d_ascii_console/index.html",
     "readmePath": "3d_ascii_console/README.md",
     "createdAt": "2026-03-27",
-    "topic": "sim"
-  },
-  {
-    "title": "Mystery Zip",
-    "path": "mystery_zip/index.html",
-    "readmePath": "mystery_zip/README.md",
-    "createdAt": "2026-04-08",
     "topic": "sim"
   },
   {
@@ -49,10 +35,24 @@
     "topic": "sim"
   },
   {
-    "title": "Optical Illusions",
-    "path": "optical_illusions/index.html",
-    "readmePath": "optical_illusions/README.md",
-    "createdAt": "2026-03-25",
-    "topic": "other"
+    "title": "Mystery Zip",
+    "path": "mystery_zip/index.html",
+    "readmePath": "mystery_zip/README.md",
+    "createdAt": "2026-04-08",
+    "topic": "sim"
+  },
+  {
+    "title": "Game Of Life On Toroid (CPU)",
+    "path": "game_of_life_on_toroid_cpu/index.html",
+    "readmePath": "game_of_life_on_toroid_cpu/README.md",
+    "createdAt": "2026-03-20",
+    "topic": "Other"
+  },
+  {
+    "title": "Game Of Life On Toroid (GPU)",
+    "path": "game_of_life_on_toroid_gpu/index.html",
+    "readmePath": "game_of_life_on_toroid_gpu/README.md",
+    "createdAt": "2026-03-31",
+    "topic": "Other"
   }
 ]
