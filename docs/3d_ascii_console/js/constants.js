@@ -1,4 +1,4 @@
-export const PALETTE = " .,-~:;=!*#$@";
+export const PALETTE = " .,-~:;*=#$@";
 export const AUTO_RESUME_MS = 0;
 export const DEFAULT_PROMPT = "root@host ~> ";
 export const CARET_BLINK_MS = 530;
