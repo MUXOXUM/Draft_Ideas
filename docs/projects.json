@@ -35,13 +35,6 @@
     "topic": "sim"
   },
   {
-    "title": "Mystery Zip",
-    "path": "mystery_zip/index.html",
-    "readmePath": "mystery_zip/README.md",
-    "createdAt": "2026-04-08",
-    "topic": "sim"
-  },
-  {
     "title": "Game Of Life On Toroid (CPU)",
     "path": "game_of_life_on_toroid_cpu/index.html",
     "readmePath": "game_of_life_on_toroid_cpu/README.md",

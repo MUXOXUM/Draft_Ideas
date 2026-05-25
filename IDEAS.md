@@ -1,5 +1,16 @@
-https://michaelbach.de/ot/index.html
-https://sunandstuff.com/
+Референсы:
+    https://michaelbach.de/ot/index.html
+    https://sunandstuff.com/
 
-Генератор стереограмм
-Странный бильярд
+Новое:
+    My_thoughts
+    Сайт про загробный эксп.
+    Калькулятор радиуса Швардшильда с визуализацией
+    Сказы о программистах опенсорса (FFmpeg, GNU Linux)
+    Генератор стереограмм
+    Странный бильярд
+    Простые числа образуют спираль
+    
+
+Фиксы:
+
