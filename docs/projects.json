@@ -35,6 +35,13 @@
     "topic": "sim"
   },
   {
+    "title": "Afterlife Experiment",
+    "path": "afterlife_experiment/index.html",
+    "readmePath": "afterlife_experiment/README.md",
+    "createdAt": "2026-06-01",
+    "topic": "Other"
+  },
+  {
     "title": "Game Of Life On Toroid (CPU)",
     "path": "game_of_life_on_toroid_cpu/index.html",
     "readmePath": "game_of_life_on_toroid_cpu/README.md",

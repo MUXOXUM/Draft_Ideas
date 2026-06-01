@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Эксперимент загробный</title>
+<script>
+// Configure MathJax before it loads
+window.MathJax = {
+  tex: {
+    inlineMath: [['\\(', '\\)']],
+    displayMath: [['$$', '$$']],
+    processEscapes: true,
+  },
+  options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] },
+  startup: { typeset: false }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg: #141412;
+    --surface: #1c1c1a;
+    --surface-2: #242422;
+    --border: #2e2e2a;
+    --border-strong: #464640;
+    --text: #e8e8e2;
+    --text-secondary: #a8a8a0;
+    --text-muted: #5a5a54;
+    --valid: #6aaa6a;
+    --valid-bg: #1a2e1a;
+    --valid-border: #2a4a2a;
+    --active-bg: #1e2a16;
+    --active-border: #324422;
+    --invalid: #aa6a6a;
+    --invalid-bg: #2e1a1a;
+    --invalid-border: #4a2a2a;
+    --accent: #e8e8e2;
+    --mono: 'Courier New', Courier, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Georgia', serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2.5rem 0 2rem;
+    background: var(--surface);
+  }
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+  header p.subtitle {
+    margin-top: 0.4rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── SECTIONS ── */
+  .section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 3rem 2rem;
+  }
+  .section + .section {
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── PROSE (from markdown) ── */
+  .prose h1 { font-size: 1.3rem; font-weight: normal; margin-bottom: 1.5rem; letter-spacing: 0.03em; }
+  .prose h2 { font-size: 1.05rem; font-weight: bold; margin: 2rem 0 0.8rem; letter-spacing: 0.02em; }
+  .prose h3 { font-size: 0.95rem; font-weight: bold; margin: 1.5rem 0 0.6rem; color: var(--text-secondary); }
+  .prose h4 { font-size: 0.9rem; font-weight: bold; margin: 1.2rem 0 0.5rem; color: var(--text-secondary); }
+  .prose p { margin-bottom: 1rem; color: var(--text); }
+  .prose ul, .prose ol { margin: 0.5rem 0 1rem 1.5rem; }
+  .prose li { margin-bottom: 0.35rem; }
+  .prose strong { font-weight: bold; }
+  .prose em { font-style: italic; }
+  .prose blockquote {
+    border-left: 2px solid var(--border-strong);
+    padding-left: 1.2rem;
+    color: var(--text-secondary);
+    margin: 1rem 0;
+    font-style: italic;
+  }
+  .prose table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  .prose table th {
+    text-align: left;
+    border-bottom: 2px solid var(--border-strong);
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+  }
+  .prose table td {
+    padding: 0.45rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .prose code {
+    font-family: var(--mono);
+    background: var(--surface-2);
+    padding: 0.1em 0.4em;
+    border-radius: 2px;
+    font-size: 0.88em;
+  }
+  .prose pre {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── CONSTRUCTOR ── */
+  .constructor-grid {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .left-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .right-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .textarea-label {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 0.5rem;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.15s;
+    min-height: 80px;
+    box-sizing: border-box;
+  }
+  textarea:focus { border-color: var(--border-strong); }
+
+  .textarea-hint {
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    line-height: 1.5;
+  }
+
+  /* ── STATS PANEL ── */
+  .stats-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .stat-row:last-of-type { border-bottom: none; }
+  .stat-label { color: var(--text-secondary); }
+  .stat-value {
+    font-family: var(--mono);
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  /* ── PARTICIPANTS ── */
+  .participants-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 1.2rem 0 0.6rem;
+  }
+
+  .participants-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .participant-btn {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .participant-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-2);
+  }
+  .participant-btn.eliminated {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+    text-decoration: line-through;
+  }
+  .participant-btn.eliminated:hover {
+    background: #444;
+    border-color: #444;
+  }
+
+  /* ── TABLE ── */
+  .chains-table-wrap {
+    margin-top: 2.5rem;
+    overflow-x: auto;
+  }
+
+  .chains-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  .chains-table thead tr {
+    border-bottom: 2px solid var(--border-strong);
+  }
+  .chains-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: normal;
+  }
+  .chains-table td {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .chains-table .chain-num {
+    font-family: var(--mono);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .chains-table tr.row-valid {
+    background: transparent;
+  }
+  .chains-table tr.row-active {
+    background: var(--active-bg);
+  }
+  .chains-table tr.row-invalid {
+    background: var(--invalid-bg);
+  }
+
+  .name-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.1rem 0.4rem;
+    margin: 0.1rem 0.15rem 0.1rem 0;
+    border-radius: 2px;
+    border: 1px solid transparent;
+  }
+  .name-tag.alive { border-color: var(--border); background: transparent; }
+  .name-tag.dead {
+    color: var(--text-muted);
+    text-decoration: line-through;
+    border-color: var(--border);
+    background: var(--surface-2);
+  }
+
+  .status-badge {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+  }
+  .badge-valid { color: var(--valid); background: var(--valid-bg); border: 1px solid var(--valid-border); }
+  .badge-active { color: #3a4a2a; background: var(--active-bg); border: 1px solid var(--active-border); }
+  .badge-invalid { color: var(--invalid); background: var(--invalid-bg); border: 1px solid var(--invalid-border); }
+
+  .empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    border: 1px dashed var(--border);
+  }
+
+  /* ── MATH SECTION ── */
+  #math-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 0;
+    background: var(--surface);
+  }
+  footer .inner {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── MATH DISPLAY ── */
+  .math-display {
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    margin: 0.8rem 0;
+  }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
+  }
+  .tab-btn {
+    padding: 0.45rem 1.1rem;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    background: var(--surface-2);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    margin-right: -1px;
+    position: relative;
+  }
+  .tab-btn:hover { color: var(--text-secondary); background: var(--surface); }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    border-bottom: 1px solid var(--surface);
+  }
+
+  .tab-panel {
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .tab-panel textarea {
+    border: none;
+    background: transparent;
+    width: 100%;
+    display: block;
+  }
+  .tab-panel textarea:focus { outline: none; }
+
+  /* ── PARSE ERROR ── */
+  .parse-error {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: #cc6666;
+    padding: 0.3rem 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>Эксперимент загробный</h1>
+  </div>
+</header>
+
+<!-- DESCRIPTION -->
+<div class="section" id="description-section">
+  <div class="section-label">Часть I — Описание</div>
+  <div class="prose" id="description-content">
+    <p style="color:var(--text-muted);font-family:var(--mono);font-size:0.85rem;">Загрузка…</p>
+  </div>
+</div>
+
+<!-- CONSTRUCTOR -->
+<div class="section" id="constructor-section">
+  <div class="section-label">Конструктор цепочек</div>
+
+  <div class="constructor-grid">
+    <!-- LEFT: tabs + textarea -->
+    <div class="left-col">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="basic">Базовый</button>
+        <button class="tab-btn" data-tab="robust">Робастность</button>
+        <button class="tab-btn" data-tab="custom">Свой</button>
+      </div>
+      <div class="tab-panel">
+        <textarea id="chains-input" spellcheck="false"></textarea>
+      </div>
+      <div class="textarea-hint">
+        Формат: &lt;роли&gt; &lt;имена&gt; — по одной цепочке на строку<br>
+        Д — донор &nbsp; Р — реципиент &nbsp; М — монитор<br>
+        Пример: <strong>ДРРМ Иван Анна Мария Пётр</strong>
+      </div>
+      <div id="parse-errors"></div>
+    </div>
+
+    <!-- RIGHT: stats + participants -->
+    <div class="right-col">
+      <div class="stats-panel">
+        <div class="stat-row">
+          <span class="stat-label">Участников</span>
+          <span class="stat-value" id="stat-participants">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Цепочек</span>
+          <span class="stat-value" id="stat-chains">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Валидных</span>
+          <span class="stat-value" id="stat-valid">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Активных</span>
+          <span class="stat-value" id="stat-active">0</span>
+        </div>
+      </div>
+
+      <div class="participants-label">Участники — нажмите для выбывания</div>
+      <div class="participants-grid" id="participants-grid"></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="chains-table-wrap" id="table-wrap">
+    <div class="empty-state" id="empty-state">Введите цепочки выше — таблица появится здесь</div>
+    <table class="chains-table" id="chains-table" style="display:none">
+      <thead>
+        <tr>
+          <th>№</th>
+          <th>Доноры</th>
+          <th>Реципиенты</th>
+          <th>Мониторы</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody id="chains-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MATH -->
+<div class="section" id="math-section">
+  <div class="section-label">Часть II — Математический аппарат</div>
+  <div class="prose" id="math-content">
+    <p style="color:var(--text-muted);font-family:var(--mono);font-size:0.85rem;">Загрузка…</p>
+  </div>
+</div>
+
+<footer>
+  <div class="inner"></div>
+</footer>
+
+<script>
+// ── MD FILES (embedded) ──────────────────────────────────────────────────────
+
+const DESCRIPTION_MD = `# Эксперимент загробный
+
+Эксперимент основан на принципе слепого метода и направлен на минимизацию субъективных влияний участников. Его исходная гипотеза допускает возможность того, что после биологической смерти человек может сохранять способность к передаче интерпретируемых сигналов живым людям.
+
+Под **сигналом** понимается заранее сформулированная и зафиксированная информация, потенциально доступная для интерпретации Реципиентом.
+
+## Роли участников
+
+**Донор** — при жизни формирует и письменно фиксирует в анкете набор сигналов, которые могут быть переданы после его биологической смерти Реципиенту. Анкета заполняется заранее и недоступна Реципиенту.
+
+**Реципиент** — не имея доступа к анкете Донора, фиксирует предполагаемые сигналы и передаёт их Монитору для проверки.
+
+**Монитор** — имеет доступ к анкете Донора и проверяет предположения Реципиента. На каждый запрос Монитор отвечает исключительно «да» или «нет».
+
+## Структура взаимодействия
+
+Базовой единицей является цепочка: **Донор → Реципиент → Монитор**. Цепочка считается **валидной**, пока в ней присутствует хотя бы один живой Реципиент и хотя бы один живой Монитор. Роль Донора на валидность не влияет — его анкета остаётся доступной после смерти.
+
+Цепочка считается **активной**, если из неё выбыл хотя бы один Донор (то есть эксперимент по ней уже идёт), и при этом она остаётся валидной.
+
+## Условия завершения
+
+Эксперимент завершается при **позитивном результате** — Монитор подтверждает точное совпадение сигнала — или при **прекращении без результата**: компрометация данных всех Доноров, либо исчезновение Реципиентов или Мониторов во всех цепочках.
+
+## Шкала совпадений
+
+- **0** — нет совпадения
+- **1** — частичное совпадение (фиксируется для анализа, но не считается результатом)
+- **2** — полное совпадение (единственное основание для позитивного результата)
+
+## Правила
+
+Донорам и Мониторам строго запрещено передавать содержание сигналов Реципиентам. Реципиент должен проверять у Монитора даже размытые предположения. Анкеты хранятся с обеспечением недоступности для Реципиентов.`;
+
+const MATH_MD = `# Математический аппарат
+
+## 1. Формальная модель
+
+### 1.1 Участники и роли
+
+Пусть задано множество участников \\(U = \\{u_0, u_1, \\dots, u_{N-1}\\}\\), \\(N \\ge 3\\). Каждый участник в рамках одной цепочки имеет ровно одну роль: \\(D\\) — донор, \\(R\\) — реципиент, \\(M\\) — монитор. В разных цепочках роли могут отличаться.
+
+### 1.2 Цепочка
+
+Цепочка \\(C_i = (D_i, R_i, M_i)\\), где \\(D_i \\neq \\varnothing\\), \\(R_i \\neq \\varnothing\\), \\(M_i \\neq \\varnothing\\). Обозначим \\(|D_i| = d_i\\), \\(|R_i| = r_i\\), \\(|M_i| = m_i\\). Общее число цепочек — \\(K\\); индексы \\(i \\in \\{0, \\dots, K-1\\}\\).
+
+### 1.3 Ограничение участия
+
+Для каждой цепочки: \\(D_i \\cap R_i = R_i \\cap M_i = D_i \\cap M_i = \\varnothing\\). Между различными цепочками пересечения допустимы.
+
+### 1.4 Число валидных цепочек
+
+Цепочка теряет валидность при \\(r_i = 0\\) или \\(m_i = 0\\). Число валидных цепочек:
+
+$$S = \\sum_{i=0}^{K-1} \\chi_i, \\qquad \\chi_i = \\begin{cases} 1, & r_i \\ge 1 \\text{ и } m_i \\ge 1 \\\\ 0, & \\text{иначе} \\end{cases}$$
+
+## 2. Вероятность случайного угадывания
+
+Если сигнал состоит из \\(n\\) независимых элементов, элемент \\(j\\) принимает \\(k_j\\) равновероятных значений:
+
+$$P = \\prod_{j=0}^{n-1} \\frac{1}{k_j}$$
+
+В частном случае \\(k_j = k\\): \\(P = (1/k)^n\\).
+
+**Пример.** Сигнал «Розовая капуста правит Римом»: пространства 300 × 10 × 10 000, тогда
+
+$$P = \\frac{1}{300 \\times 10 \\times 10\\,000} = \\frac{1}{30\\,000\\,000} \\ll 1\\%$$
+
+## 3. Оптимальная организация участников
+
+### 3.1 Матрица участия
+
+Три матрицы \\(\\mathbf{D}, \\mathbf{R}, \\mathbf{M} \\in \\{0,1\\}^{N \\times K}\\): \\(D_{ji} = 1 \\iff u_j \\in D_i\\), аналогично для \\(R\\), \\(M\\). Ограничение: \\(D_{ji} + R_{ji} + M_{ji} \\leq 1\\) для всех \\(j, i\\). Степень участия:
+
+$$\\deg_R(j) = \\sum_{i=0}^{K-1} R_{ji}, \\quad \\deg_D(j) = \\sum_{i=0}^{K-1} D_{ji}, \\quad \\deg_M(j) = \\sum_{i=0}^{K-1} M_{ji}$$
+
+### 3.2 Сбалансированная конфигурация
+
+Конфигурация **сбалансирована**, если \\(\\deg_D(j) = \\deg_R(j) = \\deg_M(j) = p\\) для всех \\(j\\). При \\(d_i = r_i = m_i = 1\\): \\(K = Np\\). При \\(p = 1\\) — минимальная конфигурация: \\(K = N\\).
+
+### 3.3 Базовая циклическая конструкция (\\(t = 0\\))
+
+$$C_i = \\bigl(\\{u_i\\},\\; \\{u_{(i+1)\\bmod N}\\},\\; \\{u_{(i+2)\\bmod N}\\}\\bigr), \\quad i = 0, \\dots, N-1$$
+
+Свойства: \\(K = N\\), \\(p = 1\\), \\(S_0 = N\\). Каждое выбывание деактивирует ровно 2 цепочки. После \\(q\\) выбываний: \\(S \\geq N - 2q\\).
+
+### 3.4 Конструкция с избыточностью (робастность \\(t \\geq 1\\))
+
+Требование: \\(r_i \\geq t+1\\) и \\(m_i \\geq t+1\\) для всех \\(i\\). Минимум участников: \\(N_{\\min} = 2t + 3\\).
+
+При \\(N\\) кратном \\((t+1)\\), шаг \\(s = N/(t+1)\\):
+
+$$C_i = \\Bigl(\\{u_i\\},\\; \\{u_{(i+1+ks)\\bmod N} \\mid k = 0,\\dots,t\\},\\; \\{u_{(i+2+ks)\\bmod N} \\mid k = 0,\\dots,t\\}\\Bigr)$$
+
+**Теорема о робастности.** Данная конструкция сохраняет \\(S = N\\) при любых \\(t\\) одновременных выбываниях.
+
+*Обоснование.* Цепочка \\(C_i\\) теряет валидность только при выбывании всех \\(t+1\\) Реципиентов или всех \\(t+1\\) Мониторов. При \\(t\\) выбываниях хотя бы один участник в каждой роли остаётся. \\(\\square\\)
+
+### 3.5 Максимальная робастность
+
+$$t_{\\max} = \\left\\lfloor \\frac{N-3}{2} \\right\\rfloor$$
+
+### 3.6 Сводная таблица конфигураций
+
+| \\(N\\) | \\(t_{\\max}\\) | \\(K\\) | \\(r_i = m_i\\) | \\(S\\) при \\(q\\) выбываниях |
+|:---:|:---:|:---:|:---:|:---|
+| 3 | 0 | 3 | 1 | \\(S \\geq 3 - 2q\\) |
+| 5 | 1 | 5 | 2 | \\(S = 5\\) при \\(q \\leq 1\\) |
+| 7 | 2 | 7 | 3 | \\(S = 7\\) при \\(q \\leq 2\\) |
+| 9 | 3 | 9 | 4 | \\(S = 9\\) при \\(q \\leq 3\\) |
+| \\(N\\) | \\(\\lfloor(N-3)/2\\rfloor\\) | \\(N\\) | \\(t_{\\max}+1\\) | \\(S = N\\) при \\(q \\leq t_{\\max}\\) |
+
+Здесь \\(q\\) — число выбывших участников после начала эксперимента.`;
+
+// ── TAB PRESETS ───────────────────────────────────────────────────────────────
+const TAB_DEFAULTS = {
+  basic: `ДРМ Алексей Матвей Илья\nДРМ Матвей Илья Лиза\nДРМ Илья Лиза Пётр\nДРМ Лиза Пётр Анна\nДРМ Пётр Анна Алексей\nДРМ Анна Алексей Матвей`,
+  robust: `ДРРММ Алексей Матвей Пётр Илья Анна\nДРРММ Матвей Илья Анна Лиза Алексей\nДРРММ Илья Лиза Алексей Пётр Матвей\nДРРММ Лиза Пётр Матвей Анна Илья\nДРРММ Пётр Анна Илья Алексей Лиза\nДРРММ Анна Алексей Лиза Матвей Пётр`,
+  custom: ''
+};
+
+const LS_KEY = 'zagrobny_custom';
+let chains = [], eliminated = new Set(), participants = new Set(), activeTab = 'basic';
+
+function mdToHtml(mdText) {
+  const mathStore = [];
+  mdText = mdText.replace(/\$\$([\s\S]+?)\$\$/g, (_, inner) => { const i = mathStore.length; mathStore.push({type:'display',content:inner}); return `MATH_${i}_END`; });
+  mdText = mdText.replace(/\\\((.+?)\\\)/g, (_, inner) => { const i = mathStore.length; mathStore.push({type:'inline',content:inner}); return `MATH_${i}_END`; });
+  let html = marked.parse(mdText);
+  html = html.replace(/MATH_(\d+)_END/g, (_, i) => { const {type,content} = mathStore[+i]; return type==='display' ? `<div class="math-display">$$${content}$$</div>` : `\\(${content}\\)`; });
+  return html;
+}
+function renderMarkdown() {
+  document.getElementById('description-content').innerHTML = mdToHtml(DESCRIPTION_MD);
+  document.getElementById('math-content').innerHTML = mdToHtml(MATH_MD);
+  if (window.MathJax) MathJax.startup.promise.then(() => MathJax.typesetPromise());
+}
+function parseInput(text) {
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const result=[], errors=[];
+  lines.forEach((line,idx) => {
+    const parts = line.split(/\s+/);
+    if (parts.length < 2) { errors.push(`Строка ${idx+1}: недостаточно данных`); return; }
+    const roleStr = parts[0].toUpperCase(), names = parts.slice(1);
+    if (!/^[ДРМ]+$/.test(roleStr)) { errors.push(`Строка ${idx+1}: роли должны состоять из Д, Р, М`); return; }
+    if (!roleStr.includes('Д')||!roleStr.includes('Р')||!roleStr.includes('М')) { errors.push(`Строка ${idx+1}: нужна хотя бы одна роль каждого типа`); return; }
+    if (roleStr.length !== names.length) { errors.push(`Строка ${idx+1}: ролей ${roleStr.length}, имён ${names.length}`); return; }
+    const donors=[],recipients=[],monitors=[];
+    for (let i=0;i<roleStr.length;i++) { if(roleStr[i]==='Д') donors.push(names[i]); else if(roleStr[i]==='Р') recipients.push(names[i]); else monitors.push(names[i]); }
+    result.push({donors,recipients,monitors});
+  });
+  return {chains:result, errors};
+}
+function computeStats() {
+  participants = new Set();
+  for (const c of chains) [...c.donors,...c.recipients,...c.monitors].forEach(n=>participants.add(n));
+  let valid=0, active=0;
+  for (const c of chains) {
+    const aR=c.recipients.filter(n=>!eliminated.has(n)).length, aM=c.monitors.filter(n=>!eliminated.has(n)).length, dD=c.donors.filter(n=>eliminated.has(n)).length;
+    if (aR>=1&&aM>=1) valid++;
+    if (dD>=1&&aR>=1&&aM>=1) active++;
+  }
+  return {valid, active};
+}
+function render() {
+  const {valid,active} = computeStats();
+  document.getElementById('stat-participants').textContent = participants.size;
+  document.getElementById('stat-chains').textContent = chains.length;
+  document.getElementById('stat-valid').textContent = valid;
+  document.getElementById('stat-active').textContent = active;
+  const grid = document.getElementById('participants-grid');
+  grid.innerHTML = '';
+  [...participants].sort((a,b)=>a.localeCompare(b,'ru')).forEach(name => {
+    const btn = document.createElement('button');
+    btn.className = 'participant-btn' + (eliminated.has(name)?' eliminated':'');
+    btn.textContent = name;
+    btn.onclick = () => { eliminated.has(name)?eliminated.delete(name):eliminated.add(name); render(); };
+    grid.appendChild(btn);
+  });
+  const empty=document.getElementById('empty-state'), table=document.getElementById('chains-table'), tbody=document.getElementById('chains-tbody');
+  if (!chains.length) { empty.style.display=''; table.style.display='none'; return; }
+  empty.style.display='none'; table.style.display=''; tbody.innerHTML='';
+  chains.forEach((c,idx) => {
+    const aR=c.recipients.filter(n=>!eliminated.has(n)).length, aM=c.monitors.filter(n=>!eliminated.has(n)).length, dD=c.donors.filter(n=>eliminated.has(n)).length;
+    const isValid=aR>=1&&aM>=1, isActive=dD>=1&&isValid;
+    let rc='row-invalid', badge='<span class="status-badge badge-invalid">Невалидна</span>';
+    if (isActive) { rc='row-active'; badge='<span class="status-badge badge-active">Активна</span>'; }
+    else if (isValid) { rc='row-valid'; badge='<span class="status-badge badge-valid">Валидна</span>'; }
+    const rn = ns => ns.map(n=>`<span class="name-tag ${eliminated.has(n)?'dead':'alive'}">${n}</span>`).join('');
+    const tr=document.createElement('tr'); tr.className=rc;
+    tr.innerHTML=`<td class="chain-num">C<sub>${idx}</sub></td><td>${rn(c.donors)}</td><td>${rn(c.recipients)}</td><td>${rn(c.monitors)}</td><td>${badge}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function updateFromTextarea(value) {
+  const {chains:parsed, errors} = parseInput(value);
+  chains = parsed;
+  const allNames=new Set();
+  for (const c of chains) [...c.donors,...c.recipients,...c.monitors].forEach(n=>allNames.add(n));
+  for (const n of [...eliminated]) { if (!allNames.has(n)) eliminated.delete(n); }
+  document.getElementById('parse-errors').innerHTML = errors.length ? errors.map(e=>`<div class="parse-error">⚠ ${e}</div>`).join('') : '';
+  render();
+}
+function syncHeight() {
+  const sp=document.querySelector('.stats-panel'), ta=document.getElementById('chains-input');
+  if (sp&&ta) { const h=sp.offsetHeight; ta.style.height=h+'px'; ta.style.minHeight=h+'px'; }
+}
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  const ta = document.getElementById('chains-input');
+  ta.value = tab==='custom' ? (localStorage.getItem(LS_KEY)||'') : TAB_DEFAULTS[tab];
+  eliminated = new Set();
+  updateFromTextarea(ta.value);
+  syncHeight();
+}
+document.getElementById('chains-input').addEventListener('input', function() {
+  if (activeTab==='custom') localStorage.setItem(LS_KEY, this.value);
+  updateFromTextarea(this.value);
+});
+document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+window.addEventListener('DOMContentLoaded', () => {
+  renderMarkdown();
+  switchTab('basic');
+  requestAnimationFrame(() => requestAnimationFrame(syncHeight));
+});
+</script>
+</body>
+</html>
